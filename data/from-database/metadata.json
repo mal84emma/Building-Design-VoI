@@ -1,0 +1,140 @@
+{
+    "name": "BD-VOI",
+    "version": "1-0",
+    "metering_data_years": [
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017
+    ],
+    "pricing_data_years": [
+        2022
+    ],
+    "carbon_data_years": [
+        2022
+    ],
+    "timezone": "Europe/London",
+    "time_created": "2024-04-29 16:00:22",
+    "notes": "Dataset for VoI for Building Design project.",
+    "data_source_info": {
+        "cebd_path_pattern": "building_data/processed_data/UCam_Building_b%s",
+        "building_ids": [
+            "b0",
+            "b4",
+            "b8",
+            "b19",
+            "b25",
+            "b40",
+            "b58",
+            "b102",
+            "b104",
+            "b118"
+        ],
+        "floor_roof_areas": "building_data/processed_data/building_floor_roof_areas.csv",
+        "weather_path": "aux_data/MetOffice Weather Data/processed_data/bedford",
+        "solar_path": "aux_data/RenewablesNinja Generation Data/processed_data/cambridge_52-194_0-131",
+        "pricing_path": "aux_data/AgileOctopus Pricing Data/processed_data/import_price_regA",
+        "carbon_intensity_path": "aux_data/NationalGridESO Carbon Intensity Data/processed_data"
+    },
+    "save_dir": "datasets/BD-VOI-v1-0",
+    "building_attributes": {
+        "mean_loads (kW)": {
+            "b0": 30.3,
+            "b102": 148.8,
+            "b104": 42.1,
+            "b118": 12.8,
+            "b19": 334.8,
+            "b25": 108.5,
+            "b4": 20.7,
+            "b40": 277.8,
+            "b58": 518.6,
+            "b8": 12.2
+        },
+        "battery_efficiencies (-)": {
+            "b0": 0.9,
+            "b102": 0.9,
+            "b104": 0.9,
+            "b118": 0.9,
+            "b19": 0.9,
+            "b25": 0.9,
+            "b4": 0.9,
+            "b40": 0.9,
+            "b58": 0.9,
+            "b8": 0.9
+        },
+        "battery_energy_capacities (kWh)": {
+            "b0": 727.0,
+            "b102": 3571.0,
+            "b104": 1010.0,
+            "b118": 307.0,
+            "b19": 8035.0,
+            "b25": 2604.0,
+            "b4": 497.0,
+            "b40": 6667.0,
+            "b58": 12446.0,
+            "b8": 293.0
+        },
+        "battery_power_capacities (kW)": {
+            "b0": 91.0,
+            "b102": 446.0,
+            "b104": 126.0,
+            "b118": 38.0,
+            "b19": 1004.0,
+            "b25": 326.0,
+            "b4": 62.0,
+            "b40": 833.0,
+            "b58": 1556.0,
+            "b8": 37.0
+        },
+        "pv_power_capacities (kW)": {
+            "b0": 89.0,
+            "b102": 120.0,
+            "b104": 217.0,
+            "b118": 128.0,
+            "b19": 136.0,
+            "b25": 58.0,
+            "b4": 93.0,
+            "b40": 394.0,
+            "b58": 2010.0,
+            "b8": 45.0
+        },
+        "gross_internal_floor_area (m2)": {
+            "b0": 3296.5,
+            "b102": 2673.4,
+            "b104": 3214.0,
+            "b118": 947.8,
+            "b19": 7029.0,
+            "b25": 1725.0,
+            "b4": 2744.5,
+            "b40": 5842.5,
+            "b58": 14888.6,
+            "b8": 2315.0
+        },
+        "number_of_floors (-)": {
+            "b0": 5.0,
+            "b102": 3.0,
+            "b104": 2.0,
+            "b118": 1.0,
+            "b19": 7.0,
+            "b25": 4.0,
+            "b4": 4.0,
+            "b40": 2.0,
+            "b58": 1.0,
+            "b8": 7.0
+        },
+        "approx_roof_area (m2)": {
+            "b0": 659.3,
+            "b102": 891.1,
+            "b104": 1607.0,
+            "b118": 947.8,
+            "b19": 1004.1,
+            "b25": 431.2,
+            "b4": 686.1,
+            "b40": 2921.2,
+            "b58": 14888.6,
+            "b8": 330.7
+        }
+    }
+}
