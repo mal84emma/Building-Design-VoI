@@ -1,0 +1,27 @@
+{
+    "time_generated": "2024-05-01 10:49:10",
+    "building_ids": [
+        0,
+        4,
+        8,
+        19,
+        25,
+        40,
+        58,
+        102,
+        104,
+        118
+    ],
+    "years": [
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017
+    ],
+    "mean_load (kWh/step)": 100,
+    "split_type": "COP",
+    "prop_heat_electrification": 1.0,
+    "COP": 3
+}
