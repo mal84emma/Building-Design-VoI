@@ -77,7 +77,6 @@ def visualise_building_data(building_file_path, fpath='temp.html', show=False):
 
 
 if __name__ == '__main__':
-    import time
 
     # iterable of building ids to visualise data
     ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118]
