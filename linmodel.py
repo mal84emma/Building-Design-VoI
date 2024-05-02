@@ -178,12 +178,12 @@ class LinProgModel():
         self.battery_inflows = {m: cp.Variable(shape=(self.N,self.tau)) for m in range(self.M)} # for [t,t+tau-1] - (kWh)
 
         if self.design:
-            self.battery_capacities = cp.Variable(shape=(self.N), nonneg=True) # battery energy capacities (kWh)
-            self.solar_capacities = cp.Variable(shape=(self.N), nonneg=True) # solar panel capacities (kWp)
-            self.grid_capacity = cp.Variable(shape=(1), nonneg=True) # grid connection capacity (kW)
+            self.battery_capacities = cp.Variable(shape=(self.N,1), nonneg=True) # battery energy capacities (kWh)
+            self.solar_capacities = cp.Variable(shape=(self.N,1), nonneg=True) # solar panel capacities (kWp)
+            self.grid_capacity = cp.Variable(nonneg=True) # grid connection capacity (kW)
         else:
-            self.battery_capacities = np.array([b.electrical_storage.capacity_history[0] for b in self.envs[0].buildings])
-            self.solar_capacities = np.array([b.pv.nominal_power for b in self.envs[0].buildings])
+            self.battery_capacities = np.array([[b.electrical_storage.capacity_history[0]] for b in self.envs[0].buildings])
+            self.solar_capacities = np.array([[b.pv.nominal_power] for b in self.envs[0].buildings])
             # NOTE: batttery & solar capacities must be common to all scenarios
             self.grid_capacity = grid_capacity
 
@@ -201,14 +201,14 @@ class LinProgModel():
         self.carbon_intensities_param = {m: cp.Parameter(shape=(self.tau)) for m in range(self.M)}
 
         # get battery data
-        self.battery_efficiencies = np.array([[b.electrical_storage.efficiency for b in env.buildings] for env in self.envs])
-        self.battery_loss_coeffs = np.array([[b.electrical_storage.loss_coefficient for b in env.buildings] for env in self.envs])
+        self.battery_efficiencies = np.array([[[b.electrical_storage.efficiency] for b in env.buildings] for env in self.envs])
+        self.battery_loss_coeffs = np.array([[[b.electrical_storage.loss_coefficient] for b in env.buildings] for env in self.envs])
         # TODO: add battery loss coefficient dynamics (self-discharge) to LP model
 
         # set battery power capacities based off energy capacities & discharge/volume ratio
         self.battery_max_powers = self.battery_capacities * self.cost_dict['battery_power_ratio']
         # define solar nominal power generation variables
-        self.solar_gens_vals = {m: cp.vstack([self.solar_gens_param[m][n,:]*self.solar_capacities[n] for n in range(self.N)]) for m in range(self.M)}
+        self.solar_gens_vals = {m: cp.multiply(self.solar_gens_param[m],self.solar_capacities) for m in range(self.M)}
 
 
         # set up scenario constraints & objective contr.
@@ -223,29 +223,29 @@ class LinProgModel():
             # initial storage dynamics constraint - for t=0
             self.constraints += [self.SoC[m][:,0] <= self.initial_socs[m] +\
                 cp.multiply(self.battery_inflows[m][:,0],\
-                    np.sqrt(self.battery_efficiencies[m]))]
+                    np.sqrt(self.battery_efficiencies[m]).flatten())]
             self.constraints += [self.SoC[m][:,0] <= self.initial_socs[m] +\
                 cp.multiply(self.battery_inflows[m][:,0],\
-                    1/np.sqrt(self.battery_efficiencies[m]))]
+                    1/np.sqrt(self.battery_efficiencies[m]).flatten())]
 
             # storage dynamics constraints - for t \in [t+1,t+tau-1]
             self.constraints += [self.SoC[m][:,1:] <= self.SoC[m][:,:-1] +\
                 cp.multiply(self.battery_inflows[m][:,1:],\
-                    np.tile((np.sqrt(self.battery_efficiencies[m]).reshape((self.N,1))),self.tau-1))]
+                    np.sqrt(self.battery_efficiencies[m]))]
             self.constraints += [self.SoC[m][:,1:] <= self.SoC[m][:,:-1] +\
                 cp.multiply(self.battery_inflows[m][:,1:],\
-                    np.tile((1/np.sqrt(self.battery_efficiencies[m]).reshape((self.N,1))),self.tau-1))]
+                    1/np.sqrt(self.battery_efficiencies[m]))]
 
             # storage power constraints - for t \in [t,t+tau-1]
-            self.constraints += [-1*np.tile(self.battery_max_powers.reshape((self.N,1)),self.tau)*self.delta_t <=\
+            self.constraints += [-1*self.battery_max_powers*self.delta_t <=\
                 self.battery_inflows[m]]
             self.constraints += [self.battery_inflows[m] <=\
-                np.tile(self.battery_max_powers.reshape((self.N,1)),self.tau)*self.delta_t]
+                self.battery_max_powers*self.delta_t]
 
             # storage energy constraints - for t \in [t+1,t+tau]
             ##self.constraints += [self.SoC[m] <= cp.vstack([self.battery_capacities]*self.tau).T]
             # NOTE: oddly for cvxpy the below is more vectorized and gives better compile times
-            for n in range(self.N): self.constraints += [self.SoC[m][n,:] <= self.battery_capacities[n]]
+            self.constraints += [self.SoC[m] <= self.battery_capacities]
 
             # define grid energy flow variables
             self.e_grids += [cp.sum(self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m], axis=0)] # for [t+1,t+tau]
@@ -371,9 +371,10 @@ class LinProgModel():
             'scenario_contrs': [[val.value for val in m] for m in self.scenario_objective_contributions] if self.M > 1 else None,
             'SOC': {m: self.SoC[m].value for m in range(self.M)},
             'battery_inflows': {m: self.battery_inflows[m].value for m in range(self.M)},
+            'e_grids': {m: self.e_grids[m].value for m in range(self.M)},
             'battery_capacities': self.battery_capacities.value if self.design else None,
             'solar_capacities': self.solar_capacities.value if self.design else None,
-            'grid_capacitiy': self.grid_capacity.value if self.design else None
+            'grid_capacity': self.grid_capacity.value if self.design else None
         }
 
         return results
