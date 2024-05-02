@@ -189,7 +189,7 @@ class LinProgModel():
 
         if clip_level in ['d','m']:
             self.xi = {m: cp.Variable(shape=(self.tau), nonneg=True) for m in range(self.M)} # net power flow slack variable
-        elif clip_level in ['b','m']:
+        if clip_level in ['b','m']:
             self.bxi = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # building level xi
 
         # initialise problem parameters
@@ -283,7 +283,7 @@ class LinProgModel():
 
             # add grid capacity exceedance cost
             self.scenario_objective_contributions[-1].append(
-                cp.maximum((cp.maximum(self.e_grids[m])/self.delta_t - self.grid_capacity),0) * self.cost_dict['grid_excess']
+                cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.grid_capacity),0) * self.cost_dict['grid_excess']
             )
 
         # define overall objective
