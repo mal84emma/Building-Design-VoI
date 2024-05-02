@@ -237,10 +237,10 @@ class LinProgModel():
                     np.tile((1/np.sqrt(self.battery_efficiencies[m]).reshape((self.N,1))),self.tau-1))]
 
             # storage power constraints - for t \in [t,t+tau-1]
-            self.constraints += [-1*np.tile(self.battery_max_powers[m].reshape((self.N,1)),self.tau)*self.delta_t <=\
+            self.constraints += [-1*np.tile(self.battery_max_powers.reshape((self.N,1)),self.tau)*self.delta_t <=\
                 self.battery_inflows[m]]
             self.constraints += [self.battery_inflows[m] <=\
-                np.tile(self.battery_max_powers[m].reshape((self.N,1)),self.tau)*self.delta_t]
+                np.tile(self.battery_max_powers.reshape((self.N,1)),self.tau)*self.delta_t]
 
             # storage energy constraints - for t \in [t+1,t+tau]
             ##self.constraints += [self.SoC[m] <= cp.vstack([self.battery_capacities]*self.tau).T]
