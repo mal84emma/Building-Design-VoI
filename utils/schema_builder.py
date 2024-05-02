@@ -24,8 +24,11 @@ def build_schema(
     """Construct a schema.json for the specified system design/realisation
     and save to file.
 
-    Note: all data file paths must be specified relative to the schema
+    Note:
+        - all data file paths must be specified relative to the schema
     location, so the schema must be saved to the dir containing the data.
+        - the building names must be consistent between scnearios, i.e.
+        all CityLearnEnv objects must use same building names for identification.
 
     Args:
         data_dir_path (Union[str, Path]): Path to directory containing data files.
