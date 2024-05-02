@@ -121,6 +121,7 @@ class LinProgModel():
                     cost_dict: Dict[str,float],
                     clip_level: str = 'm',
                     design: bool = False,
+                    grid_capacity: float = None,
                     scenario_weightings: List[float] = None
                     ) -> None:
         """Set up CVXPY LP of CityLearn model with data specified by stored `env`s, for
@@ -143,6 +144,7 @@ class LinProgModel():
                 indicating the level at which to clip cost values in the objective function.
             design (Bool, optional): whether to construct the LP as a design problem - i.e. include
                 asset capacities as decision variables
+            grid_capacity (float, optional): grid connection capacity (kW), required for operational LP (for control task).
             scenario_weightings (List[float], optional): list of scenario OPEX weightings for objective
         """
 
@@ -156,6 +158,8 @@ class LinProgModel():
         assert cost_dict['opex_factor'] > 0, "opex_factor must be greater than 0."
         self.cost_dict = cost_dict
 
+        if not design:
+            assert grid_capacity is not None, "Grid capacity must be specified for operational LP (for control task)."
         self.design = design
 
         self.M = len(self.envs) # number of scenarios for optimisation
@@ -181,7 +185,7 @@ class LinProgModel():
             self.battery_capacities = np.array([b.electrical_storage.capacity_history[0] for b in self.envs[0].buildings])
             self.solar_capacities = np.array([b.pv.nominal_power for b in self.envs[0].buildings])
             # NOTE: batttery & solar capacities must be common to all scenarios
-            self.grid_capacity = ... # how do I store and access this?
+            self.grid_capacity = grid_capacity
 
         if clip_level in ['d','m']:
             self.xi = {m: cp.Variable(shape=(self.tau), nonneg=True) for m in range(self.M)} # net power flow slack variable
@@ -288,7 +292,7 @@ class LinProgModel():
 
         # add up scenario costs with weightings
         for k in range(len(self.scenario_objective_contributions[0])):
-            self.objective_contributions += [scenario_weightings @ np.array([t[k] for t in self.scenario_objective_contributions])]
+            self.objective_contributions += [scenario_weightings @ np.array([m[k] for m in self.scenario_objective_contributions])]
 
         if self.design: # extend operational costs to full lifetime and add asset costs
             self.objective_contributions = [contr*self.cost_dict['opex_factor'] for contr in self.objective_contributions] # extend opex costs to design lifetime
@@ -364,7 +368,7 @@ class LinProgModel():
         results = {
             'objective': self.objective.value,
             'objective_contrs': [val.value for val in self.objective_contributions],
-            'scenario_contrs': [(t[0].value,t[1].value) for t in self.scenario_objective_contributions] if self.M > 1 else None,
+            'scenario_contrs': [[val.value for val in m] for m in self.scenario_objective_contributions] if self.M > 1 else None,
             'SOC': {m: self.SoC[m].value for m in range(self.M)},
             'battery_inflows': {m: self.battery_inflows[m].value for m in range(self.M)},
             'battery_capacities': self.battery_capacities.value if self.design else None,
