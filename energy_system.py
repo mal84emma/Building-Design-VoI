@@ -7,8 +7,10 @@ System design steps:
 4. Solve and report result.
 
 System control steps:
-...
-ToDO
+1. Load data for scenario.
+2. Construct controller LP model.
+3. Iterate through time steps and schedule battery with LP.
+4. Compute cost components from system history.
 """
 
 import os
@@ -24,7 +26,7 @@ from citylearn.citylearn import CityLearnEnv
 
 
 
-def optimise_system(
+def design_system(
         sampled_scenarios,
         data_dir,
         building_file_pattern,
@@ -108,6 +110,7 @@ def evaulate_system(
         tau=48,
         process_id=None
     ):
+    """ToDo"""
     # copy over system control from test_sys_control.py
     # see sys_eval.py in VOI_in_CAS repo and linmodel.py for calculating costs
 
@@ -119,6 +122,7 @@ def evaulate_multi_system_scenarios(
         building_file_pattern,
         cost_dict,
         tau=48,
+        n_processes=None
     ):
 
     return ... # mean cost (plus breakdown?)
