@@ -17,4 +17,4 @@ venv/
 *.DS_STORE
 
 # Temporary files
-*/temp.html
+temp.html

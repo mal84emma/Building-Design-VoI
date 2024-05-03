@@ -1,6 +1,7 @@
 """Plotting utilities."""
 
 import numpy as np
+import pandas as pd
 
 import plotly.graph_objects as go
 from plotly.graph_objects import Figure
@@ -13,8 +14,12 @@ def init_profile_fig(title=None, y_titles=None) -> Figure:
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig.update_layout(
-        xaxis_title='Hour',
-        xaxis=dict(rangeslider=dict(visible=True)),
+        xaxis_title='Day of Year & Hour',
+        xaxis=dict(
+            type="date",
+            tickformat='%j %H:%M', # day of year and hour label format
+            rangeslider=dict(visible=True)
+            ),
         title=title,
         legend=dict(
             orientation="h",
@@ -51,13 +56,16 @@ def init_profile_fig(title=None, y_titles=None) -> Figure:
 
 def add_profile(fig, profile, name=None, secondary_y=False) -> Figure:
 
+    n_steps = len(profile)
+    timestamps = pd.date_range(start='2000-01-01', periods=n_steps, freq='H')
+
     fig.add_trace(go.Scatter(
-        x=np.arange(len(profile)),
+        x=timestamps,
         y=profile,
         name=name,
         connectgaps=False
         ),
-        secondary_y=False
+        secondary_y=secondary_y
     )
 
     return fig
