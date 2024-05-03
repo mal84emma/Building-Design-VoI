@@ -1,10 +1,14 @@
-"""Optimise district energy system for set of sampled scenarios.
+"""Design and control district energy system for set of sampled scenarios.
 
-Steps:
+System design steps:
 1. Load data for scenario load profiles.
 2. Perform scenario reduction.
 3. Construct Stochastic Program.
 4. Solve and report result.
+
+System control steps:
+...
+ToDO
 """
 
 import os
@@ -18,8 +22,6 @@ from utils import build_schema
 from linmodel import LinProgModel
 from citylearn.citylearn import CityLearnEnv
 
-
-# NOTE: see VoI_in_CAS repo for reference and for code to steal
 
 
 def optimise_system(
@@ -64,7 +66,7 @@ def optimise_system(
     for m, lys in enumerate(reduced_scenarios):
         params = base_params.copy()
         params['building_names'] = [f'TB{i}' for i in range(len(lys))]
-        params['load_data_paths'] = [f'ly_{b}-{y}.csv' for b,y in lys]
+        params['load_data_paths'] = [building_file_pattern.format(id=b,year=y) for b,y in lys]
         params['battery_efficiencies'] = [params['base_battery_efficiency']]*len(params['building_names'])
         params['schema_name'] = f'SP_schema_s{m}'
         if process_id is not None:
@@ -99,23 +101,33 @@ def optimise_system(
 
     return lp_results
 
+
 def evaulate_system(
-        sampled_scenarios,
-        data_dir,
-        building_file_pattern,
-        costs_dict,
+        schema_path,
+        cost_dict,
         tau=48,
         process_id=None
     ):
-    # see sys_eval.py in VOI_in_CAS repo for reference
+    # copy over system control from test_sys_control.py
+    # see sys_eval.py in VOI_in_CAS repo and linmodel.py for calculating costs
 
-    return ...
+    return ... # single scenario costs (total + components)
+
+def evaulate_multi_system_scenarios(
+        sampled_scenarios,
+        data_dir,
+        building_file_pattern,
+        cost_dict,
+        tau=48,
+    ):
+
+    return ... # mean cost (plus breakdown?)
 
 if __name__ == '__main__':
 
     years = list(range(2012, 2018))
     ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118]
-    n_buildings = 8
+    n_buildings = 3
 
     np.random.seed(0)
     n_samples = 10000
