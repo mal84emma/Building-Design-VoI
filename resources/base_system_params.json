@@ -1,0 +1,11 @@
+{
+    "data_dir_path": "data/processed",
+    "weather_data_path": "weather.csv",
+    "carbon_intensity_data_path": "carbon_intensity.csv",
+    "pricing_data_path": "pricing.csv",
+    "schema_name": "schema_build_test",
+    "base_battery_efficiency": 0.95,
+    "battery_energy_capacities": null,
+    "battery_power_capacities": null,
+    "pv_power_capacities": null
+}
