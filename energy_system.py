@@ -61,7 +61,7 @@ def design_system(
     if show_progress: print("Reducing scenarios...")
     if num_reduced_scenarios is not None:
         reduced_scenarios = reduce_load_scenarios(sampled_scenarios, load_profiles, num_reduced_scenarios)
-    if show_progress: print("Reduced scenarios: ", reduced_scenarios)
+    if show_progress: print("Reduced scenarios:\n", reduced_scenarios)
 
     ## Construct Stochastic Program
     # =============================
@@ -215,14 +215,39 @@ def evaulate_system(
 
 def evaulate_multi_system_scenarios(
         sampled_scenarios,
+        system_design, # dict containing capacities
         data_dir,
         building_file_pattern,
+        design,
         cost_dict,
         tau=48,
         n_processes=None,
         show_progress=False
     ):
     """ToDo"""
+
+    # build schemas for each scenario
+    # call evaluate_system
+    # use multiprocess as sensible
+    # (only parameter needed for process is schema path, make partial function with common args for Pool)
+    # compute mean and return vals
+
+    with open(os.path.join('resources','base_system_params.json')) as jfile:
+        base_params = json.load(jfile)
+
+    # Set system design parameters
+    base_params['battery_efficiencies'] = [base_params['base_battery_efficiency']]*len(sampled_scenarios[0])
+    base_params.pop('base_battery_efficiency', None)
+    base_params['battery_energy_capacities'] = system_design['battery_capacities']
+    base_params['battery_power_capacities'] = [energy*cost_dict['battery_power_ratio'] for energy in system_design['battery_capacities']]
+    base_params['pv_power_capacities'] = system_design['solar_capacities']
+
+    # Build schema for each scenario
+    for m, lys in enumerate(sampled_scenarios):
+        params = base_params.copy()
+        params['building_names'] = [f'TB{i}' for i in range(len(lys))]
+        params['load_data_paths'] = [building_file_pattern.format(id=b,year=y) for b,y in lys]
+        params['schema_name'] = f'EVAL_schema_s{m}'
 
     return ... # mean cost (plus breakdown?)
 
@@ -233,7 +258,7 @@ if __name__ == '__main__':
     building_fname_pattern = 'ly_{id}-{year}.csv'
 
     years = list(range(2012, 2018))
-    ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118]
+    ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
     n_buildings = 2
 
     cost_dict = {
@@ -247,8 +272,8 @@ if __name__ == '__main__':
     }
 
     overall_opex_factor = 20
-    sim_duration = 24*364
-    t_start = 0
+    sim_duration = 24*7*4*3
+    t_start = 24*7*4*5
     cost_dict['opex_factor'] = overall_opex_factor*365*24/sim_duration
 
     np.random.seed(0)
@@ -261,3 +286,8 @@ if __name__ == '__main__':
 
     for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
         print(design_results[key])
+
+    # implement evaluate_system test (first try single, then implement multi)
+    cost_dict['opex_factor'] = overall_opex_factor
+
+    # compare objective fn returned by LP to actual cost from simulation (LP over-optimism)
