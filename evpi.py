@@ -9,7 +9,7 @@ from multiprocess import Pool
 # - perform for both uncertain building type (ID, uniform prob.) and known building type
 
 from energy_system import design_system, evaluate_system
-from probs_models import prior_model, posterior_model
+from prob_models import prior_model, posterior_model
 
 
 # aim is to provide really clear structure of EVPI calculations that is used by
