@@ -42,7 +42,7 @@ class LinProgModel():
 
         self.b_names = [b.name for b in env.buildings]
         self.Tmax = env.time_steps # number of timesteps available
-        self.delta_t = env.seconds_per_time_step/3600
+        self.delta_t = env.seconds_per_time_step/3600 # hours per timestep
 
 
     def add_env(self, schema: Union[str, Path] = None , env: CityLearnEnv = None) -> None:
@@ -138,8 +138,8 @@ class LinProgModel():
                     - battery: battery capacity cost ($/kWh)
                     - solar: solar capacity cost ($/kWp)
                     - opex_factor: OPEX extension factor, ratio of system lifetime to simulated duration (float/int)
-                    - grid_capacity: grid connection capacity cost ($/kW/year)
-                    - grid_excess: grid exceed capacity usage cost ($/kW excess/year)
+                    - grid_capacity: grid connection capacity cost ($/kW/day)
+                    - grid_excess: grid exceed capacity usage cost ($/kW excess/day)
                     - battery_power_ratio: ratio of power capacity to energy capacity for batteries (float)
             clip_level (Str, optional): str, either 'd' (district), 'b' (building), or 'm' (mixed),
                 indicating the level at which to clip cost values in the objective function.
@@ -292,7 +292,7 @@ class LinProgModel():
 
             # add grid capacity exceedance cost
             self.scenario_objective_contributions[-1].append(
-                cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.grid_con_capacity),0) * self.cost_dict['grid_excess']
+                cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.grid_con_capacity),0) * self.cost_dict['grid_excess'] * (self.tau * self.delta_t)/24
             )
 
         # define overall objective
@@ -305,7 +305,7 @@ class LinProgModel():
 
         if self.design: # extend operational costs to full lifetime and add asset costs
             self.objective_contributions = [contr*self.cost_dict['opex_factor'] for contr in self.objective_contributions] # extend opex costs to design lifetime
-            self.objective_contributions += [self.grid_con_capacity * self.cost_dict['grid_capacity'] * self.cost_dict['opex_factor']] # grid capacity OPEX
+            self.objective_contributions += [self.grid_con_capacity * self.cost_dict['grid_capacity'] * (self.tau * self.delta_t)/24 * self.cost_dict['opex_factor']] # grid capacity OPEX
             self.objective_contributions += [cp.sum(self.battery_capacities) * self.cost_dict['battery']] # battery CAPEX
             self.objective_contributions += [cp.sum(self.solar_capacities) * self.cost_dict['solar']] # solar CAPEX
 

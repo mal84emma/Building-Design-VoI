@@ -21,6 +21,8 @@ import cvxpy as cp
 
 import time
 from tqdm import tqdm
+from functools import partial
+from multiprocess import Pool
 from load_scenario_reduction import reduce_load_scenarios
 from utils import build_schema
 from linmodel import LinProgModel
@@ -33,7 +35,7 @@ def design_system(
         data_dir,
         building_file_pattern,
         cost_dict,
-        solver_kwargs=None,
+        solver_kwargs={},
         num_reduced_scenarios=None,
         sim_duration=None,
         t_start=0,
@@ -102,7 +104,7 @@ def design_system(
         solver_kwargs = {'solver': 'SCIPY'}
 
     if show_progress: print("Solving LP...")
-    lp_results = lp.solve_LP(verbose=show_progress)
+    lp_results = lp.solve_LP(**solver_kwargs,verbose=show_progress)
 
     ## Clean up schemas
     # =================
@@ -121,6 +123,7 @@ def evaulate_system(
         design,
         tau=48,
         clip_level='m',
+        solver_kwargs={},
         show_progress=False
     ):
     """ToDo"""
@@ -133,7 +136,7 @@ def evaulate_system(
     # Initialise Linear MPC object.
     lp = LinProgModel(env=env)
     lp.tau = tau
-    lp.generate_LP(cost_dict,design=False,grid_con_capacity=grid_con_capacity)
+    lp.generate_LP(cost_dict,design=False,grid_con_capacity=grid_con_capacity,use_parameters=True)
 
     # Initialise control loop.
     lp_solver_time_elapsed = 0
@@ -161,7 +164,7 @@ def evaulate_system(
                 lp_start = time.perf_counter()
                 lp.set_time_data_from_envs(t_start=num_steps, tau=tau, initial_socs=current_socs) # load ground truth data
                 lp.set_LP_parameters()
-                results = lp.solve_LP(ignore_dpp=False)
+                results = lp.solve_LP(**solver_kwargs,ignore_dpp=False)
                 actions: np.array = results['battery_inflows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities
                 lp_solver_time_elapsed += time.perf_counter() - lp_start
 
@@ -200,17 +203,17 @@ def evaulate_system(
         objective_contributions += [np.sum([pos_draw @ elec_prices for pos_draw in positive_building_draws])]
     # Add carbon price contribution
     if clip_level in ['d','m']:
-        objective_contributions += [positive_grid_draw @ carbon_intensities * lp.pricing_dict['carbon']]
+        objective_contributions += [positive_grid_draw @ carbon_intensities * cost_dict['carbon']]
     elif clip_level in ['b']:
-        objective_contributions += [np.sum([pos_draw @ carbon_intensities for pos_draw in positive_building_draws]) * lp.pricing_dict['carbon']]
+        objective_contributions += [np.sum([pos_draw @ carbon_intensities for pos_draw in positive_building_draws]) * cost_dict['carbon']]
     # Add grid connection exceedance cost
-    objective_contributions += np.max((np.max(positive_grid_draw)/lp.delta_t - grid_con_capacity),0) * cost_dict['grid_excess']
+    objective_contributions += [np.max((np.max(positive_grid_draw)/lp.delta_t - grid_con_capacity),0) * cost_dict['grid_excess'] * (env.time_steps*lp.delta_t)/24]
 
     if design: # Multiply opex costs up to design lifetime & add capex costs
         objective_contributions = [contr*cost_dict['opex_factor'] for contr in objective_contributions] # extend opex costs to design lifetime
-        objective_contributions += [grid_con_capacity * cost_dict['grid_capacity'] * cost_dict['opex_factor']]
-        objective_contributions += [np.sum([b.electrical_storage.capacity_history[0] for b in env.buildings]) * lp.pricing_dict['battery']]
-        objective_contributions += [np.sum([b.pv.nominal_power for b in env.buildings]) * lp.pricing_dict['solar']]
+        objective_contributions += [grid_con_capacity * cost_dict['grid_capacity'] * cost_dict['opex_factor'] * (env.time_steps*lp.delta_t)/24]
+        objective_contributions += [np.sum([b.electrical_storage.capacity_history[0] for b in env.buildings]) * cost_dict['battery']]
+        objective_contributions += [np.sum([b.pv.nominal_power for b in env.buildings]) * cost_dict['solar']]
 
     return {'objective': np.sum(objective_contributions), 'objective_contrs': objective_contributions}
 
@@ -223,6 +226,7 @@ def evaulate_multi_system_scenarios(
         design,
         cost_dict,
         tau=48,
+        solver_kwargs={},
         n_processes=None,
         show_progress=False
     ):
@@ -234,8 +238,12 @@ def evaulate_multi_system_scenarios(
     # (only parameter needed for process is schema path, make partial function with common args for Pool)
     # compute mean and return vals
 
+    if show_progress: print("Generating scenarios...")
+    # Load base system parameters
     with open(os.path.join('resources','base_system_params.json')) as jfile:
         base_params = json.load(jfile)
+
+    base_params['data_dir_path'] = data_dir
 
     # Set system design parameters
     base_params['battery_efficiencies'] = [base_params['base_battery_efficiency']]*len(sampled_scenarios[0])
@@ -245,14 +253,37 @@ def evaulate_multi_system_scenarios(
     base_params['pv_power_capacities'] = system_design['solar_capacities']
 
     # Build schema for each scenario
+    scenario_schema_paths = []
     for m, lys in enumerate(sampled_scenarios):
         params = base_params.copy()
         params['building_names'] = [f'TB{i}' for i in range(len(lys))]
         params['load_data_paths'] = [building_file_pattern.format(id=b,year=y) for b,y in lys]
         params['schema_name'] = f'EVAL_schema_s{m}'
+        schema_path = build_schema(**params)
+        scenario_schema_paths.append(schema_path)
 
+    # Evaluate system performance for each scenario
+    if show_progress: print("Evaluating scenarios...")
+    if n_processes is None:
+        eval_results = [
+            evaulate_system(
+                schema_path, cost_dict, system_design['grid_con_capacity'], design,
+                    tau=tau, solver_kwargs=solver_kwargs, show_progress=show_progress)\
+                        for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
+        ]
+    else:
+        eval_wrapper = partial(evaulate_system, cost_dict=cost_dict, grid_con_capacity=system_design['grid_con_capacity'], design=design, tau=tau, show_progress=False)
+        with Pool(n_processes) as pool:
+            eval_results = list(tqdm(pool.imap(eval_wrapper, scenario_schema_paths), total=len(scenario_schema_paths), disable=(not show_progress)))
 
-    return ... # mean cost (plus breakdown?)
+    # Clean up schemas
+    for path in scenario_schema_paths:
+        if os.path.normpath(path).split(os.path.sep)[-1] != 'schema.json':
+            os.remove(path)
+    if show_progress: print("Evaluation complete.")
+
+    return np.mean([res['objective'] for res in eval_results]), eval_results
+
 
 if __name__ == '__main__':
     # give each of the fns a test run
@@ -265,24 +296,25 @@ if __name__ == '__main__':
     n_buildings = 2
 
     cost_dict = {
-        'carbon': 1.0, #5e-1,
-        'battery': 1e3, #1e3,
-        'solar': 1e3, #2e3,
-        'grid_capacity': 5e-2/0.95*365,
-        'grid_excess': 10e-2/0.95*365,
+        'carbon': 1.0, #5e-1, # $/kgCO2
+        'battery': 1e3, #1e3, # $/kWh
+        'solar': 1e3, #2e3, # $/kWp
+        'grid_capacity': 5e-2/0.95, # $/kW/day
+        'grid_excess': 10e-2/0.95, # $/kW/day
         'opex_factor': 20,
         'battery_power_ratio': 0.4
     }
 
     overall_opex_factor = 20
     sim_duration = 24*7*4*3
-    t_start = 24*7*4*5
+    t_start = 24*7*4*4
     cost_dict['opex_factor'] = overall_opex_factor*365*24/sim_duration
 
     np.random.seed(0)
     n_samples = 1000
     scenarios = np.array([list(zip(np.random.choice(ids, n_buildings),np.random.choice(years, n_buildings))) for _ in range(n_samples)])
 
+    # test system design
     design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
                                    num_reduced_scenarios=3, sim_duration=sim_duration, t_start=t_start,
                                    show_progress=True)
@@ -290,7 +322,22 @@ if __name__ == '__main__':
     for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
         print(design_results[key])
 
-    # implement evaluate_system test (first try single, then implement multi)
+    system_design = {
+        'battery_capacities': design_results['battery_capacities'].flatten(),
+        'solar_capacities': design_results['solar_capacities'].flatten(),
+        'grid_con_capacity': design_results['grid_con_capacity']
+    }
+
+    # test system evaluation
     cost_dict['opex_factor'] = overall_opex_factor
+    mean_cost, eval_results = evaulate_multi_system_scenarios(
+            scenarios[:20], system_design, dataset_dir, building_fname_pattern,
+            design=True, cost_dict=cost_dict, tau=48, n_processes=5, show_progress=True
+        )
+
+    print('Mean system cost:', mean_cost)
 
     # compare objective fn returned by LP to actual cost from simulation (LP over-optimism)
+    print('LP objective:', design_results['objective'])
+    print('Simulation cost:', mean_cost)
+    print('Difference:', mean_cost - design_results['objective'])
