@@ -60,8 +60,10 @@ def design_system(
     # ===========================
     if show_progress: print("Reducing scenarios...")
     if num_reduced_scenarios is not None:
-        reduced_scenarios = reduce_load_scenarios(sampled_scenarios, load_profiles, num_reduced_scenarios)
-    if show_progress: print("Reduced scenarios:\n", reduced_scenarios)
+        reduced_scenarios,reduced_probs = reduce_load_scenarios(sampled_scenarios, load_profiles, num_reduced_scenarios)
+    if show_progress:
+        print("Reduced scenarios:\n", reduced_scenarios)
+        print("Reduced probabilities:\n", reduced_probs)
 
     ## Construct Stochastic Program
     # =============================
@@ -92,7 +94,7 @@ def design_system(
 
     # set data and generate LP
     lp.set_time_data_from_envs(t_start=t_start,tau=sim_duration)
-    lp.generate_LP(cost_dict,design=True,use_parameters=False)
+    lp.generate_LP(cost_dict,design=True,scenario_weightings=reduced_probs,use_parameters=False)
 
     ## Solve and report results
     # =========================
@@ -248,6 +250,7 @@ def evaulate_multi_system_scenarios(
         params['building_names'] = [f'TB{i}' for i in range(len(lys))]
         params['load_data_paths'] = [building_file_pattern.format(id=b,year=y) for b,y in lys]
         params['schema_name'] = f'EVAL_schema_s{m}'
+
 
     return ... # mean cost (plus breakdown?)
 

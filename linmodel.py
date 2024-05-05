@@ -171,7 +171,7 @@ class LinProgModel():
         assert self.N > 0, "Must have at least one building."
 
         if scenario_weightings is not None:
-            assert np.sum(scenario_weightings) == 1.0, "Scenario weightings must sum to 1."
+            assert np.isclose(np.sum(scenario_weightings), 1.0), "Scenario weightings must sum to 1."
         else:
             scenario_weightings = np.ones(self.M)/self.M
 

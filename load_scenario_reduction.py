@@ -37,4 +37,4 @@ def reduce_load_scenarios(sampled_scenarios, load_profiles_dict, num_scenarios=1
     # perform scenario reduction using 1-norm distance metric
     reduced_scenario_stats, reduced_probs, reduced_indices = FFreducer.reduce(distance=1,n_scenarios=num_scenarios)
 
-    return sampled_scenarios[reduced_indices]
+    return sampled_scenarios[reduced_indices], reduced_probs
