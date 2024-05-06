@@ -386,8 +386,8 @@ if __name__ == '__main__':
         'carbon': 1.0, #5e-1, # $/kgCO2
         'battery': 1e3, #1e3, # $/kWh
         'solar': 1e3, #2e3, # $/kWp
-        'grid_capacity': 25e-2/0.95, # $/kW/day
-        'grid_excess': 100e-2/0.95, # $/kW/day
+        'grid_capacity': 25e-2/0.95, # $/kW/day - note, this is waaay more expensive that current
+        'grid_excess': 100e-2/0.95, # $/kW/day - note, this is a waaay bigger penalty than current
         'opex_factor': 20,
         'battery_power_ratio': 0.4
     }
@@ -414,7 +414,7 @@ if __name__ == '__main__':
     # test system evaluation
     mean_cost, eval_results = evaulate_multi_system_scenarios(
             scenarios[:20], system_design, dataset_dir, building_fname_pattern,
-            design=True, cost_dict=cost_dict, tau=48, n_processes=None,
+            design=True, cost_dict=cost_dict, tau=48, n_processes=5,
             solver_kwargs=solver_kwargs, show_progress=True
         )
 
