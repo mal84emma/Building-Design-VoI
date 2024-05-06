@@ -18,6 +18,3 @@ venv/
 
 # Temporary files
 temp.html
-
-# Gurobi license file
-gurobi.lic
