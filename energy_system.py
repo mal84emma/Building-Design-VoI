@@ -150,13 +150,35 @@ def evaulate_system(
         schema_path,
         cost_dict,
         grid_con_capacity,
-        design,
+        design=False,
         tau=48,
         clip_level='m',
         solver_kwargs={},
         show_progress=False
     ):
-    """ToDo"""
+    """Simulate district energy system with given design (schema) for given
+    scenario and evaluate its performance (operational/system cost).
+
+    Args:
+        schema_path (str, Path): Path to schema file defining energy system.
+        cost_dict (dict):Dictionary of cost parameters for Linear Program.
+            Keys are as specified in `linmodel.py`.
+        grid_con_capacity (float): Capacity of grid connection in system
+            design (kW).
+        design (bool, optional): Whether to evaluate total system cost,
+            or just operational cost. Defaults to False.
+        tau (int, optional): Planning horizon of Linear MPC controller.
+            Defaults to 48.
+        clip_level (str, optional): Level at which to clip system costs.
+            See `linmodel.py` for more info. Defaults to 'm'.
+        solver_kwargs (dict, optional): Kwargs to pass to LP solver.
+            Defaults to {}.
+        show_progress (bool, optional): Whether to display simulation progress
+            in console. Defaults to False.
+
+    Returns:
+        dict: Dictionary containing total system cost from simulation and cost components.
+    """
 
     # Initialise CityLearn environment object.
     env = CityLearnEnv(schema=schema_path)
@@ -248,7 +270,7 @@ def evaulate_system(
 
 def evaulate_multi_system_scenarios(
         sampled_scenarios,
-        system_design, # dict containing capacities
+        system_design,
         data_dir,
         building_file_pattern,
         design,
@@ -258,7 +280,38 @@ def evaulate_multi_system_scenarios(
         n_processes=None,
         show_progress=False
     ):
-    """ToDo"""
+    """_summary_
+
+    Args:
+        sampled_scenarios (List): List of Nx2 vectors defining scenarios. I.e.
+            iterable of vectors containing (building_id, year) tuples for each
+            building in each scenario.
+        system_design (dict): Dictionary of system design parameters.
+            Key-values are:
+                - 'battery_capacities': List of battery energy capacity in each
+                    building (kWh)
+                - 'solar_capacities': List of solar power capacity in each
+                    building (kWp)
+                - 'grid_con_capacity': Grid connection capacity (kW)
+        building_file_pattern (fstr): Pattern of building load data files. Must
+            contain {id} and {year} placeholders.
+        design (bool, optional): Whether to evaluate total system cost,
+            or just operational cost. Defaults to False.
+        cost_dict (dict):Dictionary of cost parameters for Linear Program.
+            Keys are as specified in `linmodel.py`.
+        tau (int, optional): Planning horizon of Linear MPC controller.
+            Defaults to 48.
+        solver_kwargs (dict, optional): Kwargs to pass to LP solver.
+            Defaults to {}.
+        n_processes (int, optional): Number of processes to use for running
+            simulations in parallel using `multiprocess.Pool`. If None, sims
+            are run sequentially. Defaults to None.
+        show_progress (bool, optional): Whether to display simulation progress
+            in console. Defaults to False.
+
+    Returns:
+        Overll mean system cost and list of results for each scenario.
+    """
 
     if show_progress: print("Generating scenarios...")
     # Load base system parameters
@@ -328,8 +381,8 @@ if __name__ == '__main__':
         'carbon': 1.0, #5e-1, # $/kgCO2
         'battery': 1e3, #1e3, # $/kWh
         'solar': 1e3, #2e3, # $/kWp
-        'grid_capacity': 5e-2/0.95, # $/kW/day
-        'grid_excess': 10e-2/0.95, # $/kW/day
+        'grid_capacity': 25e-2/0.95, # $/kW/day
+        'grid_excess': 100e-2/0.95, # $/kW/day
         'opex_factor': 20,
         'battery_power_ratio': 0.4
     }
@@ -361,6 +414,7 @@ if __name__ == '__main__':
         )
 
     print('Mean system cost:', mean_cost)
+    print('Mean system cost components:', np.mean([res['objective_contrs'] for res in eval_results],axis=0))
 
     # compare objective fn returned by LP to actual cost from simulation (LP over-optimism)
     print('LP objective:', design_results['objective'])
