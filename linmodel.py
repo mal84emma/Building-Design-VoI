@@ -145,7 +145,6 @@ class LinProgModel():
                 indicating the level at which to clip cost values in the objective function.
             design (Bool, optional): whether to construct the LP as a design problem - i.e. include
                 asset capacities as decision variables
-            grid_con_capacity (float, optional): grid connection capacity (kW), required for operational LP (for control task).
             scenario_weightings (List[float], optional): list of scenario OPEX weightings for objective.
             use_parameters (Bool, optional): whether to use CVXPY parameters for data or directly load data.
                 NOTE: parameters should be used for control LP where problem of identical structure is solved repeatedly,
@@ -162,8 +161,6 @@ class LinProgModel():
         assert cost_dict['opex_factor'] > 0, "opex_factor must be greater than 0."
         self.cost_dict = cost_dict
 
-        if not design:
-            assert grid_con_capacity is not None, "Grid capacity must be specified for operational LP (for control task)."
         self.design = design
 
         self.M = len(self.envs) # number of scenarios for optimisation
@@ -189,7 +186,7 @@ class LinProgModel():
             self.battery_capacities = np.array([[b.electrical_storage.capacity_history[0]] for b in self.envs[0].buildings])
             self.solar_capacities = np.array([[b.pv.nominal_power] for b in self.envs[0].buildings])
             # NOTE: batttery & solar capacities must be common to all scenarios
-            self.grid_con_capacity = grid_con_capacity
+            self.max_grid_usage = cp.Parameter(nonneg=True) # maximum grid usage so far in simulation (kW)
 
         if clip_level in ['d','m']:
             self.xi = {m: cp.Variable(shape=(self.tau), nonneg=True) for m in range(self.M)} # net power flow slack variable
@@ -291,9 +288,21 @@ class LinProgModel():
                 ])
 
             # add grid capacity exceedance cost
-            self.scenario_objective_contributions[-1].append(
-                cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.grid_con_capacity),0) * self.cost_dict['grid_excess'] * (self.tau * self.delta_t)/24
-            )
+            if design:
+                self.scenario_objective_contributions[-1].append(
+                    cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.grid_con_capacity),0) *\
+                        self.cost_dict['grid_excess'] * (self.tau * self.delta_t)/24
+                )
+            else:
+                self.scenario_objective_contributions[-1].append(
+                    cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.max_grid_usage),0) *\
+                        self.cost_dict['grid_excess'] * (self.Tmax * self.delta_t)/24
+                )
+            # NOTE
+            # For the operational LP (design==False), we use the simulation duration Tmax and the current,
+            # maximum grid usage to compute the grid exceedance cost
+            # For the design LP (design==True), the planning horizon tau is the effective simulation duration,
+            # and so is used to compute grid costs
 
         # define overall objective
         # ========================
@@ -317,13 +326,22 @@ class LinProgModel():
         self.problem = cp.Problem(self.objective,self.constraints)
 
 
-    def set_LP_parameters(self):
-        """Set value of CVXPY parameters using loaded data."""
+    def set_LP_parameters(self, max_grid_usage: float = None):
+        """Set value of CVXPY parameters using loaded data.
+
+        Argument `max_grid_usage` (kW) is required for operational LP (for control task),
+        and keeps track of the maximum grid usage so far in the simulation to allow
+        the true cost impact of grid exceedance to be calculated.
+        """
 
         if not hasattr(self,'problem'): raise NameError("LP must be generated before parameters can be set.")
         if not hasattr(self,'elec_loads') or not hasattr(self,'solar_gens') or not hasattr(self,'prices')\
             or not hasattr(self,'carbon_intensities') or not hasattr(self,'battery_initial_socs'):
             raise NameError("Data must be loaded before parameters can be set.")
+
+        if not self.design:
+            assert max_grid_usage is not None, "max_grid_usage must be provided for operational LP."
+            self.max_grid_usage.value = max_grid_usage
 
         # NOTE: clip parameter values at 0 to prevent LP solve issues
         # This requirement is for the current LP formulation and could be

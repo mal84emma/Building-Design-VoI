@@ -186,7 +186,7 @@ def evaulate_system(
     # Initialise Linear MPC object.
     lp = LinProgModel(env=env)
     lp.tau = tau
-    lp.generate_LP(cost_dict,design=False,grid_con_capacity=grid_con_capacity,use_parameters=True)
+    lp.generate_LP(cost_dict,design=False,use_parameters=True)
 
     # Initialise control loop.
     lp_solver_time_elapsed = 0
@@ -200,6 +200,7 @@ def evaulate_system(
         [charge*capacity for charge,capacity in\
          zip(np.array(observations)[:,soc_obs_index],lp.battery_capacities.flatten())]
         ]) # get initial SoCs
+    max_grid_usage = grid_con_capacity
 
     # Execute control loop.
     with tqdm(total=env.time_steps,disable=(not show_progress)) as pbar:
@@ -213,7 +214,7 @@ def evaulate_system(
                 # setup and solve predictive Linear Program model of system
                 lp_start = time.perf_counter()
                 lp.set_time_data_from_envs(t_start=num_steps, tau=tau, initial_socs=current_socs) # load ground truth data
-                lp.set_LP_parameters()
+                lp.set_LP_parameters(max_grid_usage=max_grid_usage)
                 results = lp.solve_LP(**solver_kwargs,ignore_dpp=False,verbose=False)
                 actions: np.array = results['battery_inflows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities
                 lp_solver_time_elapsed += time.perf_counter() - lp_start
@@ -225,11 +226,15 @@ def evaulate_system(
             # ====================================================================
             observations, _, done, _ = env.step(actions)
 
-            # Update battery states-of-charge
+            # Update battery states-of-charge & max grid usage
             # ====================================================================
             current_socs = np.array([
                 [charge*capacity for charge,capacity in\
                  zip(np.array(observations)[:,soc_obs_index],lp.battery_capacities.flatten())]
+                ])
+            max_grid_usage = np.max([
+                np.max(np.clip(np.sum([b.net_electricity_consumption for b in env.buildings],axis=0),0,None))/lp.delta_t,
+                max_grid_usage
                 ])
 
             # Iterate step counter
@@ -409,7 +414,7 @@ if __name__ == '__main__':
     # test system evaluation
     mean_cost, eval_results = evaulate_multi_system_scenarios(
             scenarios[:20], system_design, dataset_dir, building_fname_pattern,
-            design=True, cost_dict=cost_dict, tau=48, n_processes=5,
+            design=True, cost_dict=cost_dict, tau=48, n_processes=None,
             solver_kwargs=solver_kwargs, show_progress=True
         )
 
