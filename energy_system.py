@@ -18,13 +18,14 @@ import json
 import numpy as np
 import pandas as pd
 import cvxpy as cp
+import gurobipy as gp
 
 import time
 from tqdm import tqdm
 from functools import partial
 from multiprocess import Pool
 from load_scenario_reduction import reduce_load_scenarios
-from utils import build_schema
+from utils import build_schema, get_Gurobi_WLS_env
 from linmodel import LinProgModel
 from citylearn.citylearn import CityLearnEnv
 
@@ -191,7 +192,7 @@ def evaulate_system(
                 lp_start = time.perf_counter()
                 lp.set_time_data_from_envs(t_start=num_steps, tau=tau, initial_socs=current_socs) # load ground truth data
                 lp.set_LP_parameters()
-                results = lp.solve_LP(**solver_kwargs,ignore_dpp=False)
+                results = lp.solve_LP(**solver_kwargs,ignore_dpp=False,verbose=False)
                 actions: np.array = results['battery_inflows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities
                 lp_solver_time_elapsed += time.perf_counter() - lp_start
 
@@ -309,6 +310,13 @@ def evaulate_multi_system_scenarios(
 if __name__ == '__main__':
     # give each of the fns a test run
 
+    try:
+        m = gp.Model()
+        e = get_Gurobi_WLS_env()
+        solver_kwargs = {'solver': 'GUROBI', 'env': e}
+    except:
+        solver_kwargs = {}
+
     dataset_dir = os.path.join('data','processed')
     building_fname_pattern = 'ly_{id}-{year}.csv'
 
@@ -326,19 +334,15 @@ if __name__ == '__main__':
         'battery_power_ratio': 0.4
     }
 
-    overall_opex_factor = 20
-    sim_duration = 24*7*4*3
-    t_start = 24*7*4*4
-    cost_dict['opex_factor'] = overall_opex_factor*365*24/sim_duration
-
     np.random.seed(0)
     n_samples = 1000
     scenarios = np.array([list(zip(np.random.choice(ids, n_buildings),np.random.choice(years, n_buildings))) for _ in range(n_samples)])
 
     # test system design
     design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
-                                   num_reduced_scenarios=3, sim_duration=sim_duration, t_start=t_start,
-                                   show_progress=True)
+                                    solver_kwargs=solver_kwargs, num_reduced_scenarios=3,
+                                    show_progress=True
+                                )
 
     for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
         print(design_results[key])
@@ -350,10 +354,10 @@ if __name__ == '__main__':
     }
 
     # test system evaluation
-    cost_dict['opex_factor'] = overall_opex_factor
     mean_cost, eval_results = evaulate_multi_system_scenarios(
             scenarios[:20], system_design, dataset_dir, building_fname_pattern,
-            design=True, cost_dict=cost_dict, tau=48, n_processes=5, show_progress=True
+            design=True, cost_dict=cost_dict, tau=48, n_processes=5,
+            solver_kwargs=solver_kwargs, show_progress=True
         )
 
     print('Mean system cost:', mean_cost)

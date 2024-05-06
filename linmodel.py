@@ -357,11 +357,17 @@ class LinProgModel():
         if not hasattr(self,'problem'): raise ValueError("LP model has not been generated.")
 
         if 'solver' not in kwargs: kwargs['solver'] = 'SCIPY'
+        elif kwargs['solver'] == 'GUROBI':
+            assert 'env' in kwargs, "Gurobi environment must be provided for GUROBI solver."
         if 'verbose' not in kwargs: kwargs['verbose'] = False
         if 'ignore_dpp' not in kwargs: kwargs['ignore_dpp'] = True
         if kwargs['solver'] == 'SCIPY': kwargs['scipy_options'] = {'method':'highs'}
-        if kwargs['verbose'] == True: kwargs['scipy_options'].update({'disp':True})
-        # TODO: add Gurobi solver options
+        if kwargs['verbose'] == True:
+            if kwargs['solver'] == 'SCIPY':
+                kwargs['scipy_options'].update({'disp':True})
+        else:
+            if kwargs['solver'] == 'GUROBI':
+                kwargs['env'].setParam('LogToConsole',0)
 
         try:
             self.problem.solve(**kwargs)
