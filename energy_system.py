@@ -42,7 +42,35 @@ def design_system(
         process_id=None,
         show_progress=False
     ):
-    """ToDO"""
+    """Use Stochastic Program formulation to design district energy system for
+    given set of scenarios.
+
+    Args:
+        sampled_scenarios (List): List of Nx2 vectors defining scenarios. I.e.
+            iterable of vectors containing (building_id, year) tuples for each
+            building in each scenario.
+        data_dir (str or Path): Path to directory containing Citylearn compatible
+            data.
+        building_file_pattern (fstr): Pattern of building load data files. Must
+            contain {id} and {year} placeholders.
+        cost_dict (dict):Dictionary of cost parameters for Stochastic Program.
+            Keys are as specified in `linmodel.py`.
+        solver_kwargs (dict, optional): Solver options for LP. Defaults to {}.
+        num_reduced_scenarios (int, optional): Number of scenarios to be used
+            in Stochastic Program, selected via Scenario Reduction. If None,
+            all provided scenarios are used, assuming equal probability.
+            Defaults to None.
+        sim_duration (int, optional): Number of timesteps to include in
+            Stocasthic Program. If None, all available timesteps are used.
+            Defaults to None.
+        t_start (int, optional): Start timestep for data. Defaults to 0.
+        process_id (int, optional): Unique process ID for tagging schemas when
+            fn called via multiprocessing. Defaults to None.
+        show_progress (bool, optional): Whether to display progress. Defaults to False.
+
+    Returns:
+        dict: Dictionary of LP results return from `LinProgModel.solve_LP`.
+    """
     # NOTE: scenarios must be vector of Nx2 vectors, (building_id, year) tuple for each building
     # Use num_red_scenarios = None for deterministic cases
 
@@ -63,6 +91,9 @@ def design_system(
     if show_progress: print("Reducing scenarios...")
     if num_reduced_scenarios is not None:
         reduced_scenarios,reduced_probs = reduce_load_scenarios(sampled_scenarios, load_profiles, num_reduced_scenarios)
+    else:
+        reduced_scenarios = sampled_scenarios
+        reduced_probs = np.ones(len(reduced_scenarios))/len(reduced_scenarios)
     if show_progress:
         print("Reduced scenarios:\n", reduced_scenarios)
         print("Reduced probabilities:\n", reduced_probs)
