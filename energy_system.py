@@ -71,8 +71,6 @@ def design_system(
     Returns:
         dict: Dictionary of LP results return from `LinProgModel.solve_LP`.
     """
-    # NOTE: scenarios must be vector of Nx2 vectors, (building_id, year) tuple for each building
-    # Use num_red_scenarios = None for deterministic cases
 
     ## Get load profiles for all scenarios (reduces load time)
     # ========================================================
@@ -158,8 +156,6 @@ def evaulate_system(
         show_progress=False
     ):
     """ToDo"""
-    # copy over system control from test_sys_control.py
-    # see sys_eval.py in VOI_in_CAS repo and linmodel.py for calculating costs
 
     # Initialise CityLearn environment object.
     env = CityLearnEnv(schema=schema_path)
@@ -262,12 +258,6 @@ def evaulate_multi_system_scenarios(
         show_progress=False
     ):
     """ToDo"""
-
-    # build schemas for each scenario
-    # call evaluate_system
-    # use multiprocess as sensible
-    # (only parameter needed for process is schema path, make partial function with common args for Pool)
-    # compute mean and return vals
 
     if show_progress: print("Generating scenarios...")
     # Load base system parameters
