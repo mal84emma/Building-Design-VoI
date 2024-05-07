@@ -10,7 +10,7 @@ def prior_model(n_buildings,n_samples,building_ids,years):
 
     Args:
         n_buildings (int): Number of buildings in system.
-        n_samples (int,float): Number of scenarios to samples from prior.
+        n_samples (int): Number of scenarios to samples from prior.
         building_ids (list[int]): List of valid building ids to sample from.
         years (list[int]): List of valid years to sample from.
 
@@ -29,7 +29,7 @@ def posterior_model(sampled_ids,n_samples,years):
 
     Args:
         sampled_ids (list[int]): List of building ids in posterior scenarios.
-        n_samples (int,float): Number of scenarios to samples from prior.
+        n_samples (int): Number of scenarios to samples from prior.
         years (list[int]): List of valid years to sample from.
 
     Returns:
