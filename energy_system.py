@@ -368,6 +368,8 @@ def evaulate_multi_system_scenarios(
 if __name__ == '__main__':
     # give each of the fns a test run
 
+    start = time.time()
+
     try:
         m = gp.Model()
         e = get_Gurobi_WLS_env()
@@ -380,7 +382,7 @@ if __name__ == '__main__':
 
     years = list(range(2012, 2018))
     ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
-    n_buildings = 2
+    n_buildings = 5
 
     cost_dict = {
         'carbon': 1.0, #5e-1, # $/kgCO2
@@ -398,7 +400,7 @@ if __name__ == '__main__':
 
     # test system design
     design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
-                                    solver_kwargs=solver_kwargs, num_reduced_scenarios=3,
+                                    solver_kwargs=solver_kwargs, num_reduced_scenarios=10,
                                     show_progress=True
                                 )
 
@@ -425,3 +427,6 @@ if __name__ == '__main__':
     print('LP objective:', design_results['objective'])
     print('Simulation cost:', mean_cost)
     print('Difference:', mean_cost - design_results['objective'])
+
+    end = time.time()
+    print('Total run time:', end-start)
