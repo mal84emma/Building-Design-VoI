@@ -192,6 +192,7 @@ class LinProgModel():
             self.xi = {m: cp.Variable(shape=(self.tau), nonneg=True) for m in range(self.M)} # net power flow slack variable
         if clip_level in ['b','m']:
             self.bxi = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # building level xi
+        # NOTE: have to use slack variables, as cp.pos() is not DPP compliant
 
         # initialise problem parameters (control) or directly load data (design)
         # ======================================================================
