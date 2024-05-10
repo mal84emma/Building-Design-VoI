@@ -386,7 +386,7 @@ if __name__ == '__main__':
 
     years = list(range(2012, 2018))
     ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
-    n_buildings = 5
+    n_buildings = 8
 
     cost_dict = {
         'carbon': 1.0, #5e-1, # $/kgCO2
