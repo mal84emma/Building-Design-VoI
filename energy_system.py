@@ -19,11 +19,11 @@ import numpy as np
 import pandas as pd
 import cvxpy as cp
 import gurobipy as gp
+import multiprocess as mp
 
 import time
 from tqdm import tqdm
 from functools import partial
-from multiprocess import Pool
 from load_scenario_reduction import reduce_load_scenarios
 from utils import build_schema, get_Gurobi_WLS_env
 from linmodel import LinProgModel
@@ -347,13 +347,17 @@ def evaulate_multi_system_scenarios(
     if n_processes is None:
         eval_results = [
             evaulate_system(
-                schema_path, cost_dict, system_design['grid_con_capacity'], design,
+                schema_path, cost_dict, system_design['grid_con_capacity'], design=design,
                     tau=tau, solver_kwargs=solver_kwargs, show_progress=show_progress)\
                         for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
         ]
     else:
-        eval_wrapper = partial(evaulate_system, cost_dict=cost_dict, grid_con_capacity=system_design['grid_con_capacity'], design=design, tau=tau, show_progress=False)
-        with Pool(n_processes) as pool:
+        eval_wrapper = partial(evaulate_system,
+                               cost_dict=cost_dict, grid_con_capacity=system_design['grid_con_capacity'],
+                               design=design, tau=tau,
+                               solver_kwargs=solver_kwargs, show_progress=False
+                              )
+        with mp.Pool(n_processes) as pool:
             eval_results = list(tqdm(pool.imap(eval_wrapper, scenario_schema_paths), total=len(scenario_schema_paths), disable=(not show_progress)))
 
     # Clean up schemas
@@ -413,10 +417,11 @@ if __name__ == '__main__':
         'grid_con_capacity': design_results['grid_con_capacity']
     }
 
+    solver_kwargs = {} # HiGHS better for operational LP
     # test system evaluation
     mean_cost, eval_results = evaulate_multi_system_scenarios(
             scenarios[:20], system_design, dataset_dir, building_fname_pattern,
-            design=True, cost_dict=cost_dict, tau=48, n_processes=5,
+            design=True, cost_dict=cost_dict, tau=48, n_processes=None,
             solver_kwargs=solver_kwargs, show_progress=True
         )
 
