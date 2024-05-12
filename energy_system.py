@@ -289,7 +289,7 @@ def evaulate_multi_system_scenarios(
         n_processes=None,
         show_progress=False
     ):
-    """_summary_
+    """Evaluate performance of given system design over multiple scenarios (simulations).
 
     Args:
         sampled_scenarios (List): List of Nx2 vectors defining scenarios. I.e.
@@ -332,9 +332,9 @@ def evaulate_multi_system_scenarios(
     # Set system design parameters
     base_params['battery_efficiencies'] = [base_params['base_battery_efficiency']]*len(sampled_scenarios[0])
     base_params.pop('base_battery_efficiency', None)
-    base_params['battery_energy_capacities'] = system_design['battery_capacities']
-    base_params['battery_power_capacities'] = [energy*cost_dict['battery_power_ratio'] for energy in system_design['battery_capacities']]
-    base_params['pv_power_capacities'] = system_design['solar_capacities']
+    base_params['battery_energy_capacities'] = system_design['battery_capacities'].flatten()
+    base_params['battery_power_capacities'] = [energy*cost_dict['battery_power_ratio'] for energy in system_design['battery_capacities'].flatten()]
+    base_params['pv_power_capacities'] = system_design['solar_capacities'].flatten()
 
     # Build schema for each scenario
     scenario_schema_paths = []
@@ -416,8 +416,8 @@ if __name__ == '__main__':
         print(design_results[key])
 
     system_design = {
-        'battery_capacities': design_results['battery_capacities'].flatten(),
-        'solar_capacities': design_results['solar_capacities'].flatten(),
+        'battery_capacities': design_results['battery_capacities'],
+        'solar_capacities': design_results['solar_capacities'],
         'grid_con_capacity': design_results['grid_con_capacity']
     }
 

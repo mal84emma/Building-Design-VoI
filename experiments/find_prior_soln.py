@@ -8,7 +8,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 import numpy as np
 import gurobipy as gp
-from utils import load_scenarios, get_Gurobi_WLS_env, data_handling
+from utils import get_Gurobi_WLS_env, data_handling
 from energy_system import design_system
 
 if __name__ == '__main__':
@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     # Load prior scenario samples.
     scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
-    scenarios = load_scenarios(scenarios_path)
+    scenarios = data_handling.load_scenarios(scenarios_path)
     n_buildings = scenarios.shape[1]
 
     # Compute prior optimal system design.
@@ -43,4 +43,4 @@ if __name__ == '__main__':
 
     # Save results.
     out_path = os.path.join('experiments','results','prior_design_results.csv')
-    data_handling.save_LP_design_results(design_results, out_path)
+    data_handling.save_design_results(design_results, out_path)

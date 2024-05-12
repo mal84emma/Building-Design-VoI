@@ -28,7 +28,7 @@ def load_scenarios(in_path):
 
     return np.array(scenarios)
 
-def save_LP_design_results(results, out_path):
+def save_design_results(results, out_path):
     """Save LP design results & used scenarios to CSV."""
 
     design_header = ['Parameter', 'Units']
@@ -64,7 +64,7 @@ def save_LP_design_results(results, out_path):
         for scenario_no, (scenario,prob) in enumerate(zip(results['reduced_scenarios'],results['reduced_probs'])):
             writer.writerow([scenario_no] + [prob] + [(b,y) for b,y in scenario])
 
-def load_LP_design_results(in_path):
+def load_design_results(in_path):
     """Load LP design results & used scenarios from CSV."""
 
     results = {}
@@ -73,8 +73,8 @@ def load_LP_design_results(in_path):
         rows = [row for row in reader]
 
     # Load design results.
-    results['battery_capacities'] = np.array([float(t) for t in rows[2][2:]]).reshape(1,-1)
-    results['solar_capacities'] = np.array([float(t) for t in rows[3][2:]]).reshape(1,-1)
+    results['battery_capacities'] = np.array([float(t) for t in rows[2][2:]])[np.newaxis].T
+    results['solar_capacities'] = np.array([float(t) for t in rows[3][2:]])[np.newaxis].T
     results['grid_con_capacity'] = float(rows[4][2])
 
     # Load objective results.
@@ -93,9 +93,9 @@ def save_eval_results(results, design, scenarios, out_path):
     design_header = ['Parameter', 'Units']
     design_header.extend([f'SB{i}' for i in range(scenarios.shape[1])])
     design_rows = [
-        ['Battery Capacity', 'kWh', *results['battery_capacities'].flatten()],
-        ['Solar Capacity', 'kWp', *results['solar_capacities'].flatten()],
-        ['Grid Con. Capacity', 'kW', results['grid_con_capacity']]
+        ['Battery Capacity', 'kWh', *design['battery_capacities'].flatten()],
+        ['Solar Capacity', 'kWp', *design['solar_capacities'].flatten()],
+        ['Grid Con. Capacity', 'kW', design['grid_con_capacity']]
     ]
 
     evals_header = ['Scenario no.','Total cost','Elec. price','Carbon cost','Grid excess cost','Grid capacity cost','Battery cost','Solar cost']
@@ -120,12 +120,13 @@ def load_eval_results(in_path):
     results = []
     with open(in_path, 'r') as csvfile:
         reader = csv.reader(csvfile)
-        header = next(reader)
-        for row in reader:
-            result = {
-                'objective': float(row[7]),
-                'objective_contrs': [float(t) for t in row[8:]]
-            }
-            results.append(result)
+        eval_rows = [row for row in reader][7:]
+
+    for row in eval_rows:
+        result = {
+            'objective': float(row[1]),
+            'objective_contrs': [float(t) for t in row[2:8]]
+        }
+        results.append(result)
 
     return results
