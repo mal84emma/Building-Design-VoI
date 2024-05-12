@@ -87,10 +87,45 @@ def load_LP_design_results(in_path):
 
     return results
 
-def save_eval_results(results, out_path):
-    # for saving the cost results from n evaulations of a system design
-    ...
+def save_eval_results(results, design, scenarios, out_path):
+    """Save evaluation results for multiple scenarios to CSV."""
+
+    design_header = ['Parameter', 'Units']
+    design_header.extend([f'SB{i}' for i in range(scenarios.shape[1])])
+    design_rows = [
+        ['Battery Capacity', 'kWh', *results['battery_capacities'].flatten()],
+        ['Solar Capacity', 'kWp', *results['solar_capacities'].flatten()],
+        ['Grid Con. Capacity', 'kW', results['grid_con_capacity']]
+    ]
+
+    evals_header = ['Scenario no.','Total cost','Elec. price','Carbon cost','Grid excess cost','Grid capacity cost','Battery cost','Solar cost']
+    evals_header.extend([f'SB{i}' for i in range(scenarios.shape[1])])
+
+    with open(out_path, 'w') as csvfile:
+        writer = csv.writer(csvfile)
+
+        writer.writerow(['Design'])
+        writer.writerow(design_header)
+        for row in design_rows:
+            writer.writerow(row)
+
+        writer.writerow(['Evaluations'])
+        writer.writerow(evals_header)
+        for i, (result,scenario) in enumerate(zip(results,scenarios)):
+            writer.writerow([i,result['objective'],*result['objective_contrs'],*[(b,y) for b,y in scenario]])
 
 def load_eval_results(in_path):
+    """Load evaluation results for multiple scenarios from CSV."""
 
-    ...
+    results = []
+    with open(in_path, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        header = next(reader)
+        for row in reader:
+            result = {
+                'objective': float(row[7]),
+                'objective_contrs': [float(t) for t in row[8:]]
+            }
+            results.append(result)
+
+    return results
