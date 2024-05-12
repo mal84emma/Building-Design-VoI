@@ -136,6 +136,10 @@ def design_system(
     if show_progress: print("Solving LP...")
     lp_results = lp.solve_LP(**solver_kwargs,verbose=show_progress)
 
+    results = lp_results.copy()
+    results['reduced_scenarios'] = reduced_scenarios
+    results['reduced_probs'] = reduced_probs
+
     ## Clean up schemas
     # =================
     for path in schema_paths:
@@ -143,7 +147,7 @@ def design_system(
             os.remove(path)
     if show_progress: print("Design complete.")
 
-    return lp_results
+    return results
 
 
 def evaulate_system(

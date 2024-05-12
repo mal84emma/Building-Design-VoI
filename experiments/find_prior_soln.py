@@ -8,7 +8,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 import numpy as np
 import gurobipy as gp
-from utils import load_scenarios, get_Gurobi_WLS_env
+from utils import load_scenarios, get_Gurobi_WLS_env, data_handling
 from energy_system import design_system
 
 if __name__ == '__main__':
@@ -41,11 +41,6 @@ if __name__ == '__main__':
     for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
         print(design_results[key])
 
-    system_design = {
-        'battery_capacities': design_results['battery_capacities'].flatten(),
-        'solar_capacities': design_results['solar_capacities'].flatten(),
-        'grid_con_capacity': design_results['grid_con_capacity']
-    }
-
     # Save results.
-    ... # implement fn to save results from LP design??
+    out_path = os.path.join('experiments','results','prior_design_results.csv')
+    data_handling.save_LP_design_results(design_results, out_path)
