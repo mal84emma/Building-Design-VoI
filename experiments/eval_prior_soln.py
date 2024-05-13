@@ -23,10 +23,10 @@ if __name__ == '__main__':
     system_design = data_handling.load_design_results(design_results_path)
 
     # Evaluate prior optimal system design.
-    n_processes = 3
+    n_processes = 6
 
     mean_cost, eval_results = evaulate_multi_system_scenarios(
-        scenarios[:6],
+        scenarios[:60],
         system_design,
         dataset_dir,
         building_fname_pattern,
@@ -39,4 +39,4 @@ if __name__ == '__main__':
 
     # Save results.
     out_path = os.path.join('experiments','results','prior_eval_results.csv')
-    data_handling.save_eval_results(eval_results, system_design, scenarios[:6], out_path)
+    data_handling.save_eval_results(eval_results, system_design, scenarios[:60], out_path)

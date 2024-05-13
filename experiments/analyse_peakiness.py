@@ -3,7 +3,12 @@
 Data is split into years due to changes in usage trend clashing with normalisation.
 """
 
+# Hack to emulate running files from root directory.
 import os
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+# run using `python -m experiments.{fname}`
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt

@@ -1,0 +1,1 @@
+# give options for different info types
