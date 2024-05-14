@@ -8,7 +8,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 import numpy as np
 from prob_models import prior_model
-from utils import save_scenarios
+from utils import data_handling
 
 
 if __name__ == '__main__':
@@ -27,4 +27,4 @@ if __name__ == '__main__':
     scenarios = prior_model(n_buildings, n_samples, ids, years)
 
     # Save data.
-    save_scenarios(scenarios, save_path)
+    data_handling.save_scenarios(scenarios, save_path)

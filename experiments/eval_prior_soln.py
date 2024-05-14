@@ -25,7 +25,7 @@ if __name__ == '__main__':
         n_buildings = scenarios.shape[1]
 
         # Load prior optimal system design.
-        design_results_path = os.path.join('experiments','results','prior_design_results.csv')
+        design_results_path = os.path.join('experiments','results','prior','prior_design_results.csv')
         system_design = data_handling.load_design_results(design_results_path)
 
         # Evaluate prior optimal system design.
@@ -44,5 +44,5 @@ if __name__ == '__main__':
         print(mean_cost)
 
         # Save results.
-        out_path = os.path.join('experiments','results','prior_eval_results.csv')
+        out_path = os.path.join('experiments','results','prior','prior_eval_results.csv')
         data_handling.save_eval_results(eval_results, system_design, scenarios, out_path)
