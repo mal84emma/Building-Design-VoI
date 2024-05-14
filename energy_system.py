@@ -22,10 +22,12 @@ import gurobipy as gp
 import multiprocess as mp
 
 import time
+import warnings
 from tqdm import tqdm
 from functools import partial
 from load_scenario_reduction import reduce_load_scenarios
 from utils import build_schema, get_Gurobi_WLS_env
+from utils.plotting import init_profile_fig, add_profile
 from linmodel import LinProgModel
 from citylearn.citylearn import CityLearnEnv
 
@@ -158,7 +160,8 @@ def evaulate_system(
         tau=48,
         clip_level='m',
         solver_kwargs={},
-        show_progress=False
+        show_progress=False,
+        plot=False
     ):
     """Simulate district energy system with given design (schema) for given
     scenario and evaluate its performance (operational/system cost).
@@ -179,6 +182,8 @@ def evaulate_system(
             Defaults to {}.
         show_progress (bool, optional): Whether to display simulation progress
             in console. Defaults to False.
+        plot (bool, optional): Whether to plot system profiles for simulated
+            scenario. Defaults to False.
 
     Returns:
         dict: Dictionary containing total system cost from simulation and cost components.
@@ -246,6 +251,20 @@ def evaulate_system(
 
     if show_progress: print("Evaluation complete.")
 
+    # Plot system profiles
+    # ====================
+    if plot:
+        fig = init_profile_fig(
+            y_titles={'primary': 'Building energy usage (kWh)', 'secondary': 'Battery SoC (kWh)'}
+            )
+
+        for b in env.buildings:
+            fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} energy', secondary_y=False)
+            fig = add_profile(fig, b.electrical_storage.soc, name=f'{b.name} SoC', secondary_y=True)
+
+        fig.write_html(f'{os.path.splitext(os.path.basename(schema_path))[0]}_plot.html')
+        fig.show()
+
     # Compute objective fn of simulation
     # ==================================
     # compute useful variables
@@ -287,7 +306,8 @@ def evaulate_multi_system_scenarios(
         tau=48,
         solver_kwargs={},
         n_processes=None,
-        show_progress=False
+        show_progress=False,
+        plot=False
     ):
     """Evaluate performance of given system design over multiple scenarios (simulations).
 
@@ -317,6 +337,8 @@ def evaulate_multi_system_scenarios(
             are run sequentially. Defaults to None.
         show_progress (bool, optional): Whether to display simulation progress
             in console. Defaults to False.
+        plot (bool, optional): Whether to plot system profiles for each scenario.
+            Defaults to False.
 
     Returns:
         Overll mean system cost and list of results for each scenario.
@@ -352,14 +374,15 @@ def evaulate_multi_system_scenarios(
         eval_results = [
             evaulate_system(
                 schema_path, cost_dict, system_design['grid_con_capacity'], design=design,
-                    tau=tau, solver_kwargs=solver_kwargs, show_progress=show_progress)\
+                    tau=tau, solver_kwargs=solver_kwargs, show_progress=show_progress, plot=plot)\
                         for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
         ]
     else:
         eval_wrapper = partial(evaulate_system,
                                cost_dict=cost_dict, grid_con_capacity=system_design['grid_con_capacity'],
                                design=design, tau=tau,
-                               solver_kwargs=solver_kwargs, show_progress=False
+                               solver_kwargs=solver_kwargs,
+                               show_progress=False, plot=False
                               )
         with mp.Pool(n_processes) as pool:
             eval_results = list(tqdm(pool.imap(eval_wrapper, scenario_schema_paths), total=len(scenario_schema_paths), disable=(not show_progress)))
@@ -376,66 +399,70 @@ def evaulate_multi_system_scenarios(
 if __name__ == '__main__':
     # give each of the fns a test run
 
-    start = time.time()
+    with warnings.catch_warnings():
+        # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
+        warnings.simplefilter("ignore", category=DeprecationWarning)
 
-    try:
-        m = gp.Model()
-        e = get_Gurobi_WLS_env()
-        solver_kwargs = {'solver': 'GUROBI', 'env': e}
-    except:
-        solver_kwargs = {}
+        start = time.time()
 
-    dataset_dir = os.path.join('data','processed')
-    building_fname_pattern = 'ly_{id}-{year}.csv'
+        try:
+            m = gp.Model()
+            e = get_Gurobi_WLS_env()
+            solver_kwargs = {'solver': 'GUROBI', 'env': e}
+        except:
+            solver_kwargs = {}
 
-    years = list(range(2012, 2018))
-    ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
-    n_buildings = 8
+        dataset_dir = os.path.join('data','processed')
+        building_fname_pattern = 'ly_{id}-{year}.csv'
 
-    cost_dict = {
-        'carbon': 1.0, #5e-1, # $/kgCO2
-        'battery': 1e3, #1e3, # $/kWh
-        'solar': 1e3, #2e3, # $/kWp
-        'grid_capacity': 25e-2/0.95, # $/kW/day - note, this is waaay more expensive that current
-        'grid_excess': 100e-2/0.95, # $/kW/day - note, this is a waaay bigger penalty than current
-        'opex_factor': 20,
-        'battery_power_ratio': 0.4
-    }
+        years = list(range(2012, 2018))
+        ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
+        n_buildings = 3
 
-    np.random.seed(0)
-    n_samples = 1000
-    scenarios = np.array([list(zip(np.random.choice(ids, n_buildings),np.random.choice(years, n_buildings))) for _ in range(n_samples)])
+        cost_dict = {
+            'carbon': 1.0, #5e-1, # $/kgCO2
+            'battery': 1e3, #1e3, # $/kWh
+            'solar': 1e3, #2e3, # $/kWp
+            'grid_capacity': 25e-2/0.95, # $/kW/day - note, this is waaay more expensive that current
+            'grid_excess': 100e-2/0.95, # $/kW/day - note, this is a waaay bigger penalty than current
+            'opex_factor': 20,
+            'battery_power_ratio': 0.4
+        }
 
-    # test system design
-    design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
-                                    solver_kwargs=solver_kwargs, num_reduced_scenarios=10,
-                                    show_progress=True
-                                )
+        np.random.seed(0)
+        n_samples = 1000
+        scenarios = np.array([list(zip(np.random.choice(ids, n_buildings),np.random.choice(years, n_buildings))) for _ in range(n_samples)])
 
-    for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
-        print(design_results[key])
+        # test system design
+        design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
+                                        solver_kwargs=solver_kwargs, num_reduced_scenarios=5,
+                                        show_progress=True
+                                    )
 
-    system_design = {
-        'battery_capacities': design_results['battery_capacities'],
-        'solar_capacities': design_results['solar_capacities'],
-        'grid_con_capacity': design_results['grid_con_capacity']
-    }
+        for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
+            print(design_results[key])
 
-    solver_kwargs = {} # HiGHS better for operational LP
-    # test system evaluation
-    mean_cost, eval_results = evaulate_multi_system_scenarios(
-            scenarios[:20], system_design, dataset_dir, building_fname_pattern,
-            design=True, cost_dict=cost_dict, tau=48, n_processes=None,
-            solver_kwargs=solver_kwargs, show_progress=True
-        )
+        system_design = {
+            'battery_capacities': design_results['battery_capacities'],
+            'solar_capacities': design_results['solar_capacities'],
+            'grid_con_capacity': design_results['grid_con_capacity']
+        }
 
-    print('Mean system cost:', mean_cost)
-    print('Mean system cost components:', np.mean([res['objective_contrs'] for res in eval_results],axis=0))
+        solver_kwargs = {} # HiGHS better for operational LP
+        # test system evaluation
+        mean_cost, eval_results = evaulate_multi_system_scenarios(
+                scenarios[:20], system_design, dataset_dir, building_fname_pattern,
+                design=True, cost_dict=cost_dict, tau=48, n_processes=None,
+                solver_kwargs=solver_kwargs, show_progress=True, plot=True
+            )
 
-    # compare objective fn returned by LP to actual cost from simulation (LP over-optimism)
-    print('LP objective:', design_results['objective'])
-    print('Simulation cost:', mean_cost)
-    print('Difference:', mean_cost - design_results['objective'])
+        print('Mean system cost:', mean_cost)
+        print('Mean system cost components:', np.mean([res['objective_contrs'] for res in eval_results],axis=0))
 
-    end = time.time()
-    print('Total run time:', end-start)
+        # compare objective fn returned by LP to actual cost from simulation (LP over-optimism)
+        print('LP objective:', design_results['objective'])
+        print('Simulation cost:', mean_cost)
+        print('Difference:', mean_cost - design_results['objective'])
+
+        end = time.time()
+        print('Total run time:', end-start)
