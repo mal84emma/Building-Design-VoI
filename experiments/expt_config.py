@@ -14,6 +14,7 @@ ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
 # Simulation parameters
 n_buildings = 8
 num_reduced_scenarios = 10
+n_post_samples = 320 # determined from MC convergence plots
 
 # Cost parameters
 cost_dict = {

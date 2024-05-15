@@ -1,4 +1,4 @@
-"""Evaluation perform of prior optimal solution (system design)."""
+"""Evaluate performance of prior optimal solution (system design)."""
 
 # Hack to emulate running files from root directory.
 import os

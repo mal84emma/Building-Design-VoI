@@ -9,6 +9,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import time
 import warnings
 from tqdm import tqdm
+import numpy as np
 import gurobipy as gp
 import multiprocess as mp
 from functools import partial
@@ -19,18 +20,40 @@ from energy_system import design_system
 
 def posterior_design(
         scenario_id_tuple,
-        data_dir,
-        building_file_pattern,
-        cost_dict,
         out_dir,
         years,
         n_post_samples,
         info_type,
+        data_dir,
+        building_file_pattern,
+        cost_dict,
         solver_kwargs={},
         num_reduced_scenarios=None,
         show_progress=False
     ):
-    """ToDo"""
+    """Wrapper function for designing system based on posterior samples.
+
+    Args:
+        scenario_id_tuple (tuple): Tuple containing scenario number (index of
+            samples from prior) and scenario vector for sampled scenario.
+            Single argument to unpack for ease of multiprocessing.
+        out_dir (path): Directory to save design results to.
+        years (list): List of valid years for posterior distr/sampling.
+        n_post_samples (int): No. of samples to draw from posterior.
+        info_type (str): 'type' or 'profile'. Type of information provided by
+            sampled scenario, determining posterior dist. to use.
+        NOTE: all args below are passed to `design_system` function. See docstring
+            for details.
+        data_dir (path):
+        building_file_pattern (str):
+        cost_dict (dict):
+        solver_kwargs (dict, optional): Defaults to {}.
+        num_reduced_scenarios (int, optional): Defaults to None.
+        show_progress (bool, optional): Defaults to False.
+
+    Returns:
+        dict: Not used.
+    """
 
     scenario_num,measured_scenario = scenario_id_tuple
 
@@ -72,8 +95,9 @@ def posterior_design(
 
 if __name__ == '__main__':
 
+    np.random.seed(0)
+
     info_type = 'type'
-    n_post_samples = 1000
     n_concurrent_designs = 8
     # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
 
@@ -83,6 +107,7 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=UserWarning)
 
         from experiments.expt_config import *
+        n_post_samples = 1000 # adjust for design
 
         try:
             m = gp.Model()
@@ -104,13 +129,13 @@ if __name__ == '__main__':
         # Set up wrapper function for posterior design.
         design_wrapper = partial(
             posterior_design,
-            data_dir=dataset_dir,
-            building_file_pattern=building_fname_pattern,
-            cost_dict=cost_dict,
             out_dir=out_dir,
             years=years,
             n_post_samples=n_post_samples,
             info_type=info_type,
+            data_dir=dataset_dir,
+            building_file_pattern=building_fname_pattern,
+            cost_dict=cost_dict,
             solver_kwargs=solver_kwargs,
             num_reduced_scenarios=num_reduced_scenarios
         )
