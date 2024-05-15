@@ -6,6 +6,7 @@ import sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 # run using `python -m experiments.{fname}`
 
+import time
 import warnings
 from tqdm import tqdm
 import gurobipy as gp
@@ -45,6 +46,7 @@ def posterior_design(
         sampled_scenarios = posterior_model(measured_scenario[:,0], n_post_samples, years)
 
     # Design system.
+    start = time.time()
     design_results = design_system(
             sampled_scenarios,
             data_dir,
@@ -55,10 +57,14 @@ def posterior_design(
             show_progress=show_progress if scenario_num != None else False,
             process_id=scenario_num
         )
+    end = time.time()
 
     # Save results.
     out_path = os.path.join(out_dir,f's{scenario_num}_posterior_design_results.csv')
     data_handling.save_design_results(design_results, out_path)
+
+    # Report finish.
+    print(f'Scenario {scenario_num} design completed in {end-start:.2f}s @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
 
     return design_results
 
@@ -68,17 +74,20 @@ if __name__ == '__main__':
 
     info_type = 'type'
     n_post_samples = 1000
-    n_concurrent_designs = 2
+    n_concurrent_designs = 8
+    # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
 
         from experiments.expt_config import *
 
         try:
             m = gp.Model()
-            solver_kwargs = {'solver': 'GUROBI'}
+            solver_kwargs = {'solver':'GUROBI','Threads':mp.cpu_count()//n_concurrent_designs}
+            # restrict solver threads to prevent slowdown due to thread swapping
         except:
             solver_kwargs = {}
 
