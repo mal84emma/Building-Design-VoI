@@ -136,7 +136,8 @@ def design_system(
         solver_kwargs = {'solver': 'SCIPY'}
 
     if show_progress: print("Solving LP...")
-    lp_results = lp.solve_LP(**solver_kwargs,verbose=show_progress)
+    lp_results = lp.solve_LP(**solver_kwargs,verbose=show_progress,canon_backend=cp.SCIPY_CANON_BACKEND)
+    # SCIPY compilation backend provides somewhat better performance on sparse problem
 
     results = lp_results.copy()
     results['reduced_scenarios'] = reduced_scenarios
@@ -417,7 +418,7 @@ if __name__ == '__main__':
 
         years = list(range(2012, 2018))
         ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
-        n_buildings = 3
+        n_buildings = 8
 
         cost_dict = {
             'carbon': 1.0, #5e-1, # $/kgCO2
@@ -435,7 +436,7 @@ if __name__ == '__main__':
 
         # test system design
         design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
-                                        solver_kwargs=solver_kwargs, num_reduced_scenarios=5,
+                                        solver_kwargs=solver_kwargs, num_reduced_scenarios=10,
                                         show_progress=True
                                     )
 
@@ -453,7 +454,7 @@ if __name__ == '__main__':
         mean_cost, eval_results = evaulate_multi_system_scenarios(
                 scenarios[:20], system_design, dataset_dir, building_fname_pattern,
                 design=True, cost_dict=cost_dict, tau=48, n_processes=None,
-                solver_kwargs=solver_kwargs, show_progress=True, plot=True
+                solver_kwargs=solver_kwargs, show_progress=True, plot=False
             )
 
         print('Mean system cost:', mean_cost)
