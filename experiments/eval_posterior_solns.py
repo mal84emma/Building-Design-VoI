@@ -95,7 +95,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     info_type = 'type'
-    n_processes = 6 # mp.cpu_count()
+    n_processes = mp.cpu_count()
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
@@ -103,8 +103,6 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=UserWarning)
 
         from experiments.expt_config import *
-        ##temp
-        n_post_samples = 24
 
         # Load prior scenario samples.
         scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
@@ -112,7 +110,7 @@ if __name__ == '__main__':
         n_buildings = scenarios.shape[1]
 
         ##temp
-        scenarios = scenarios[:5]
+        scenarios = scenarios[:10]
 
         # Load posterior optimal system designs.
         design_results_path = os.path.join('experiments','results',f'posterior_{info_type}_info','designs','s{j}_posterior_design_results.csv')
