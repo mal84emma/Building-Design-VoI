@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
 
     # Load prior eval results.
-    eval_results_path = os.path.join('experiments','results','prior_eval_results.csv')
+    eval_results_path = os.path.join('experiments','results','prior','prior_eval_results.csv')
     eval_results = data_handling.load_eval_results(eval_results_path)
 
     # Compute MC convergence of mean cost.
