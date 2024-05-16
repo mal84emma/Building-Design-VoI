@@ -18,7 +18,8 @@ from energy_system import evaulate_multi_system_scenarios
 
 
 def posterior_evaluation(
-        design_scen_id_tuple,
+        scenario_id_tuple,
+        design_results_path_pattern,
         out_dir,
         years,
         n_post_samples,
@@ -33,10 +34,12 @@ def posterior_evaluation(
     """Wrapper function for evaluating system based on posterior samples.
 
     Args:
-        design_scen_id_tuple (_type_): Tuple containing scenario number
-            (index of samples from prior), system design, and scenario vector
-            for sampled scenario. Single argument to unpack for ease of
+        scenario_id_tuple (_type_): Tuple containing scenario number
+            (index of samples from prior), and scenario vector for 
+            sampled scenario. Single argument to unpack for ease of
             multiprocessing.
+        design_results_path_pattern (str): Path pattern for loading
+            system design results. Formatted with scenario number.
         out_dir (path): Directory to save design results to.
         years (list): List of valid years for posterior distr/sampling.
         n_post_samples (int): No. of samples to draw from posterior.
@@ -56,7 +59,10 @@ def posterior_evaluation(
         dict: Not used.
     """
 
-    scenario_num,system_design,measured_scenario = design_scen_id_tuple
+    scenario_num,measured_scenario = scenario_id_tuple
+
+    # Load system design.
+    system_design = data_handling.load_design_results(design_results_path_pattern.format(j=scenario_num))
 
     # Sample scenarios from posterior based on info type.
     if info_type == 'profile':
@@ -109,12 +115,9 @@ if __name__ == '__main__':
         scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
-        ##temp
-        scenarios = scenarios[:10]
-
         # Load posterior optimal system designs.
-        design_results_path = os.path.join('experiments','results',f'posterior_{info_type}_info','designs','s{j}_posterior_design_results.csv')
-        design_scen_tuples = [(j,data_handling.load_design_results(design_results_path.format(j=j)),scenario) for j,scenario in enumerate(scenarios)]
+        designs_path_pattern = os.path.join('experiments','results',f'posterior_{info_type}_info','designs','s{j}_posterior_design_results.csv')
+        scenario_tuples = [(j,scenario) for j,scenario in enumerate(scenarios)][:100] ##temp
 
         # Set up output directory.
         out_dir = os.path.join('experiments','results',f'posterior_{info_type}_info','evals')
@@ -124,16 +127,17 @@ if __name__ == '__main__':
         # Set up wrapper function for posterior design.
         eval_wrapper = partial(
             posterior_evaluation,
-            data_dir=dataset_dir,
-            building_file_pattern=building_fname_pattern,
-            cost_dict=cost_dict,
+            design_results_path_pattern=designs_path_pattern,
             out_dir=out_dir,
             years=years,
             n_post_samples=n_post_samples,
             info_type=info_type,
+            data_dir=dataset_dir,
+            building_file_pattern=building_fname_pattern,
+            cost_dict=cost_dict,
             solver_kwargs={},
             n_processes=n_processes
         )
 
         # Evaluate posterior optimal system designs.
-        eval_results = [eval_wrapper(t) for t in tqdm(design_scen_tuples)]
+        eval_results = [eval_wrapper(t) for t in tqdm(scenario_tuples)]
