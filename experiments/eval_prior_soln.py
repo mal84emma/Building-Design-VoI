@@ -13,9 +13,12 @@ from energy_system import evaulate_multi_system_scenarios
 
 if __name__ == '__main__':
 
+    n_processes = mp.cpu_count()
+
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
 
         from experiments.expt_config import *
 
@@ -29,8 +32,6 @@ if __name__ == '__main__':
         system_design = data_handling.load_design_results(design_results_path)
 
         # Evaluate prior optimal system design.
-        n_processes = mp.cpu_count()
-
         mean_cost, eval_results = evaulate_multi_system_scenarios(
             scenarios,
             system_design,
