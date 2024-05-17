@@ -71,7 +71,7 @@ def posterior_evaluation(
         sampled_scenarios = posterior_model(measured_scenario[:,0], n_post_samples, years)
 
     # Evaluate system.
-    if show_progress: print(f'Starting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
+    if show_progress: print(f'\nStarting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
     start = time.time()
     mean_cost, eval_results = evaulate_multi_system_scenarios(
             sampled_scenarios,
@@ -91,7 +91,7 @@ def posterior_evaluation(
     data_handling.save_eval_results(eval_results, system_design, sampled_scenarios, out_path)
 
     # Report finish.
-    print(f'Scenario {scenario_num} evaluation completed in {end-start:.2f}s @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
+    print(f'\nScenario {scenario_num} evaluation completed in {end-start:.2f}s @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
 
     return eval_results
 
