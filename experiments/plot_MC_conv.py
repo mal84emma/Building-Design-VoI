@@ -37,6 +37,6 @@ if __name__ == '__main__':
         plt.plot(range(1,len(post_MC_estimates[info_type])+1), np.array(post_MC_estimates[info_type])/1e6, c='k', ls=lss[i], label=f'Posterior ({info_type} info)')
     plt.xlabel('Number of scenarios')
     plt.ylabel('Mean cost ($m)')
-    plt.xlim(0,100)#len(prior_MC_estimates)+1)
+    plt.xlim(0,200)#len(prior_MC_estimates)+1)
     plt.legend()
     plt.show()
