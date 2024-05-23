@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
         try:
             m = gp.Model()
-            solver_kwargs = {'solver':'GUROBI','Threads':mp.cpu_count()//n_concurrent_designs}
+            solver_kwargs = {'solver':'GUROBI','Threads':4}
             # restrict solver threads to prevent slowdown due to thread swapping
         except:
             solver_kwargs = {}
