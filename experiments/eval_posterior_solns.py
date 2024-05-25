@@ -14,7 +14,7 @@ import multiprocess as mp
 from functools import partial
 from utils import data_handling
 from prob_models import posterior_model
-from energy_system import evaulate_multi_system_scenarios
+from energy_system import evaluate_multi_system_scenarios
 
 
 def posterior_evaluation(
@@ -45,7 +45,7 @@ def posterior_evaluation(
         n_post_samples (int): No. of samples to draw from posterior.
         info_type (str): 'type' or 'profile'. Type of information provided by
             sampled scenario, determining posterior dist. to use.
-        NOTE: all args below are passed to `evaulate_multi_system_scenarios`
+        NOTE: all args below are passed to `evaluate_multi_system_scenarios`
             function. See docstring for details.
         data_dir (path):
         building_file_pattern (str):
@@ -73,7 +73,7 @@ def posterior_evaluation(
     # Evaluate system.
     if show_progress: print(f'\nStarting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
     start = time.time()
-    mean_cost, eval_results = evaulate_multi_system_scenarios(
+    mean_cost, eval_results = evaluate_multi_system_scenarios(
             sampled_scenarios,
             system_design,
             data_dir,

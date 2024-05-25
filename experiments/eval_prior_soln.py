@@ -9,7 +9,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import warnings
 from utils import data_handling
 import multiprocessing as mp
-from energy_system import evaulate_multi_system_scenarios
+from energy_system import evaluate_multi_system_scenarios
 
 if __name__ == '__main__':
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         system_design = data_handling.load_design_results(design_results_path)
 
         # Evaluate prior optimal system design.
-        mean_cost, eval_results = evaulate_multi_system_scenarios(
+        mean_cost, eval_results = evaluate_multi_system_scenarios(
             scenarios,
             system_design,
             dataset_dir,

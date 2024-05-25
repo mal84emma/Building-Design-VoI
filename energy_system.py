@@ -153,7 +153,7 @@ def design_system(
     return results
 
 
-def evaulate_system(
+def evaluate_system(
         schema_path,
         cost_dict,
         grid_con_capacity,
@@ -256,11 +256,12 @@ def evaulate_system(
     # ====================
     if plot:
         fig = init_profile_fig(
-            y_titles={'primary': 'Building energy usage (kWh)', 'secondary': 'Battery SoC (kWh)'}
+            y_titles={'primary': 'Building energy (kWh)', 'secondary': 'Battery SoC (kWh)'}
             )
 
         for b in env.buildings:
-            fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} energy', secondary_y=False)
+            fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} net load', secondary_y=False)
+            fig = add_profile(fig, b.pv.get_generation(b.energy_simulation.solar_generation), name=f'{b.name} solar', secondary_y=False)
             fig = add_profile(fig, b.electrical_storage.soc, name=f'{b.name} SoC', secondary_y=True)
 
         fig.write_html(f'{os.path.splitext(os.path.basename(schema_path))[0]}_plot.html')
@@ -297,7 +298,7 @@ def evaulate_system(
     return {'objective': np.sum(objective_contributions), 'objective_contrs': objective_contributions}
 
 
-def evaulate_multi_system_scenarios(
+def evaluate_multi_system_scenarios(
         sampled_scenarios,
         system_design,
         data_dir,
@@ -373,13 +374,13 @@ def evaulate_multi_system_scenarios(
     if show_progress: print("Evaluating scenarios...")
     if n_processes is None:
         eval_results = [
-            evaulate_system(
+            evaluate_system(
                 schema_path, cost_dict, system_design['grid_con_capacity'], design=design,
                     tau=tau, solver_kwargs=solver_kwargs, show_progress=show_progress, plot=plot)\
                         for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
         ]
     else:
-        eval_wrapper = partial(evaulate_system,
+        eval_wrapper = partial(evaluate_system,
                                cost_dict=cost_dict, grid_con_capacity=system_design['grid_con_capacity'],
                                design=design, tau=tau,
                                solver_kwargs=solver_kwargs,
@@ -451,7 +452,7 @@ if __name__ == '__main__':
 
         solver_kwargs = {} # HiGHS better for operational LP
         # test system evaluation
-        mean_cost, eval_results = evaulate_multi_system_scenarios(
+        mean_cost, eval_results = evaluate_multi_system_scenarios(
                 scenarios[:20], system_design, dataset_dir, building_fname_pattern,
                 design=True, cost_dict=cost_dict, tau=48, n_processes=None,
                 solver_kwargs=solver_kwargs, show_progress=True, plot=False
