@@ -121,7 +121,6 @@ class LinProgModel():
                     cost_dict: Dict[str,float],
                     clip_level: str = 'm',
                     design: bool = False,
-                    grid_con_capacity: float = None,
                     scenario_weightings: List[float] = None,
                     use_parameters = False
                     ) -> None:
@@ -290,15 +289,16 @@ class LinProgModel():
 
             # add grid capacity exceedance cost
             if design:
-                self.scenario_objective_contributions[-1].append(
-                    cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.grid_con_capacity),0) *\
-                        self.cost_dict['grid_excess'] * (self.tau * self.delta_t)/24
-                )
+                threshold_capacity = self.grid_con_capacity
+                billing_period = self.tau
             else:
-                self.scenario_objective_contributions[-1].append(
-                    cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - self.max_grid_usage),0) *\
-                        self.cost_dict['grid_excess'] * (self.Tmax * self.delta_t)/24
-                )
+                threshold_capacity = self.max_grid_usage
+                billing_period = self.Tmax
+
+            self.scenario_objective_contributions[-1].append(
+                cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - threshold_capacity),0) *\
+                    self.cost_dict['grid_excess'] * (billing_period * self.delta_t)/24
+            )
             # NOTE
             # For the operational LP (design==False), we use the simulation duration Tmax and the current,
             # maximum grid usage to compute the grid exceedance cost
