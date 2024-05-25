@@ -51,9 +51,13 @@ if __name__ == '__main__':
     carbon_data.to_csv(os.path.join(out_dir, 'carbon_intensity.csv'), index=False)
     weather_data.to_csv(os.path.join(out_dir, 'weather.csv'), index=False) # note, weather data is not used
 
+    # Load in 2022 solar data
+    solar_data = pd.read_csv(os.path.join(data_dir, 'solar_2022.csv'), header=0)['solar generation [W/kW]'].to_numpy()
+
     ## Process load data
     # Combine heat and electrical load data then save first 8760 hours
     # of data from each year for each building to separate file
+    # Use same solar generation data for all building-year pairs
     for b_id in building_ids:
         load_data = pd.read_csv(os.path.join(data_dir, bname_pattern % b_id), header=0)
 
@@ -72,6 +76,7 @@ if __name__ == '__main__':
             out_df = load_data.loc[year_first_idx:year_first_idx+hours_per_year-1].copy()
             out_df['Heating Load [kWh]'] = 0
             out_df['Equipment Electric Power [kWh]'] = np.around(norm_load*mean_load, 1)
+            out_df['Solar Generation [W/kW]'] = np.around(solar_data[:hours_per_year], 1)
             out_df.to_csv(os.path.join(out_dir, outname_pattern.format(building_id=b_id, year=year)), index=False)
 
     ## Construct and save metadata
