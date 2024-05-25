@@ -1,6 +1,6 @@
 {
     "name": "BD-VOI",
-    "version": "1-0",
+    "version": "1-1",
     "metering_data_years": [
         2012,
         2013,
@@ -16,7 +16,7 @@
         2022
     ],
     "timezone": "Europe/London",
-    "time_created": "2024-04-29 16:00:22",
+    "time_created": "2024-05-25 21:00:59",
     "notes": "Dataset for VoI for Building Design project.",
     "data_source_info": {
         "cebd_path_pattern": "building_data/processed_data/UCam_Building_b%s",
@@ -38,7 +38,7 @@
         "pricing_path": "aux_data/AgileOctopus Pricing Data/processed_data/import_price_regA",
         "carbon_intensity_path": "aux_data/NationalGridESO Carbon Intensity Data/processed_data"
     },
-    "save_dir": "datasets/BD-VOI-v1-0",
+    "save_dir": "datasets/BD-VOI-v1-1",
     "building_attributes": {
         "mean_loads (kW)": {
             "b0": 30.3,
