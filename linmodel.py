@@ -175,7 +175,9 @@ class LinProgModel():
         # initialise decision variables
         # =============================
         self.SoC = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # for [t+1,t+tau] - (kWh)
-        self.battery_inflows = {m: cp.Variable(shape=(self.N,self.tau)) for m in range(self.M)} # for [t,t+tau-1] - (kWh)
+        self.battery_inflows = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # for [t,t+tau-1] - (kWh)
+        self.battery_outflows = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # for [t,t+tau-1] - (kWh)
+        # NOTE: cvxpy does not like pos(e)*eta - neg(e)/eta, so split positive and negative flows into separate decision variables
 
         if self.design:
             self.battery_capacities = cp.Variable(shape=(self.N,1), nonneg=True) # battery energy capacities (kWh)
@@ -229,32 +231,28 @@ class LinProgModel():
         for m in range(self.M): # for each scenario
 
             # initial storage dynamics constraint - for t=0
-            self.constraints += [self.SoC[m][:,0] <= self.initial_socs[m] +\
+            self.constraints += [self.SoC[m][:,0] == self.initial_socs[m] +\
                 cp.multiply(self.battery_inflows[m][:,0],\
-                    np.sqrt(self.battery_efficiencies[m]).flatten())]
-            self.constraints += [self.SoC[m][:,0] <= self.initial_socs[m] +\
-                cp.multiply(self.battery_inflows[m][:,0],\
+                    np.sqrt(self.battery_efficiencies[m]).flatten()) -\
+                cp.multiply(self.battery_outflows[m][:,0],\
                     1/np.sqrt(self.battery_efficiencies[m]).flatten())]
 
             # storage dynamics constraints - for t \in [t+1,t+tau-1]
-            self.constraints += [self.SoC[m][:,1:] <= self.SoC[m][:,:-1] +\
+            self.constraints += [self.SoC[m][:,1:] == self.SoC[m][:,:-1] +\
                 cp.multiply(self.battery_inflows[m][:,1:],\
-                    np.sqrt(self.battery_efficiencies[m]))]
-            self.constraints += [self.SoC[m][:,1:] <= self.SoC[m][:,:-1] +\
-                cp.multiply(self.battery_inflows[m][:,1:],\
+                    np.sqrt(self.battery_efficiencies[m])) -\
+                cp.multiply(self.battery_outflows[m][:,1:],\
                     1/np.sqrt(self.battery_efficiencies[m]))]
 
             # storage power constraints - for t \in [t,t+tau-1]
-            self.constraints += [-1*self.battery_max_powers*self.delta_t <=\
-                self.battery_inflows[m]]
-            self.constraints += [self.battery_inflows[m] <=\
-                self.battery_max_powers*self.delta_t]
+            self.constraints += [self.battery_inflows[m] <= self.battery_max_powers*self.delta_t]
+            self.constraints += [self.battery_outflows[m] <= self.battery_max_powers*self.delta_t]
 
             self.constraints += [self.SoC[m] <= self.battery_capacities]
             # NOTE: oddly cvxpy CAN provide lower compile times if constraints are defined per building
 
             # define grid energy flow variables
-            self.e_grids += [cp.sum(self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m], axis=0)] # for [t+1,t+tau]
+            self.e_grids += [cp.sum(self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m] , axis=0)] # for [t+1,t+tau]
 
             if clip_level == 'd':
                 # aggregate costs at district level (CityLearn <= 1.6 objective)
@@ -268,7 +266,7 @@ class LinProgModel():
             elif clip_level == 'b':
                 # aggregate costs at building level and average (CityLearn >= 1.7 objective)
                 # costs are computed from clipped building net power flow values - i.e. looking at mean building elec. cost
-                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m]] # for [t+1,t+tau]
+                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m] ] # for [t+1,t+tau]
                 self.constraints += [self.bxi[m] >= self.building_power_flows[m]] # for t \in [t+1,t+tau]
                 self.scenario_objective_contributions.append([
                     (cp.sum(self.bxi[m], axis=0) @ self.prices_param[m]),
@@ -280,7 +278,7 @@ class LinProgModel():
                 # costs at district level (estate level carbon reporting )
                 # i.e. carbon credit system but no inter-building energy trading
                 self.constraints += [self.xi[m] >= self.e_grids[m]] # for t \in [t+1,t+tau]
-                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m]] # for [t+1,t+tau]
+                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m] ] # for [t+1,t+tau]
                 self.constraints += [self.bxi[m] >= self.building_power_flows[m]] # for t \in [t+1,t+tau]
                 self.scenario_objective_contributions.append([
                     (cp.sum(self.bxi[m], axis=0) @ self.prices_param[m]),
@@ -289,14 +287,14 @@ class LinProgModel():
 
             # add grid capacity exceedance cost
             if design:
-                threshold_capacity = self.grid_con_capacity
+                threshold_capacity = self.grid_con_capacity/self.cost_dict['grid_con_safety_factor']
                 billing_period = self.tau
             else:
                 threshold_capacity = self.max_grid_usage
                 billing_period = self.Tmax
 
             self.scenario_objective_contributions[-1].append(
-                cp.maximum((cp.maximum(*self.e_grids[m])/self.delta_t - threshold_capacity),0) *\
+                cp.maximum((cp.maximum(*self.e_grids[m],*(-1*self.e_grids[m]))/self.delta_t - threshold_capacity),0) *\
                     self.cost_dict['grid_excess'] * (billing_period * self.delta_t)/24
             )
             # NOTE
@@ -404,7 +402,7 @@ class LinProgModel():
             'objective_contrs': [val.value for val in self.objective_contributions],
             'scenario_contrs': [[val.value for val in m] for m in self.scenario_objective_contributions] if self.M > 1 else None,
             'SOC': {m: self.SoC[m].value for m in range(self.M)},
-            'battery_inflows': {m: self.battery_inflows[m].value for m in range(self.M)},
+            'battery_net_in_flows': {m: self.battery_inflows[m].value - self.battery_outflows[m].value for m in range(self.M)},
             'e_grids': {m: self.e_grids[m].value for m in range(self.M)},
             'battery_capacities': self.battery_capacities.value if self.design else None,
             'solar_capacities': self.solar_capacities.value if self.design else None,

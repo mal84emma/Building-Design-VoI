@@ -226,7 +226,7 @@ def evaluate_system(
                 lp.set_time_data_from_envs(t_start=num_steps, tau=tau, initial_socs=current_socs) # load ground truth data
                 lp.set_LP_parameters(max_grid_usage=max_grid_usage)
                 results = lp.solve_LP(**solver_kwargs,ignore_dpp=False,verbose=False)
-                actions: np.array = results['battery_inflows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities
+                actions: np.array = results['battery_net_in_flows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities
                 lp_solver_time_elapsed += time.perf_counter() - lp_start
 
             else: # if not enough time left to grab a full length ground truth forecast: do nothing
@@ -243,7 +243,7 @@ def evaluate_system(
                  zip(np.array(observations)[:,soc_obs_index],lp.battery_capacities.flatten())]
                 ])
             max_grid_usage = np.max([
-                np.max(np.clip(np.sum([b.net_electricity_consumption for b in env.buildings],axis=0),0,None))/lp.delta_t,
+                np.max(np.abs(np.sum([b.net_electricity_consumption for b in env.buildings],axis=0)))/lp.delta_t,
                 max_grid_usage
                 ])
 
@@ -252,28 +252,14 @@ def evaluate_system(
 
     if show_progress: print("Evaluation complete.")
 
-    # Plot system profiles
-    # ====================
-    if plot:
-        fig = init_profile_fig(
-            y_titles={'primary': 'Building energy (kWh)', 'secondary': 'Battery SoC (kWh)'}
-            )
-
-        for b in env.buildings:
-            fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} net load', secondary_y=False)
-            fig = add_profile(fig, b.pv.get_generation(b.energy_simulation.solar_generation), name=f'{b.name} solar', secondary_y=False)
-            fig = add_profile(fig, b.electrical_storage.soc, name=f'{b.name} SoC', secondary_y=True)
-
-        fig.write_html(f'{os.path.splitext(os.path.basename(schema_path))[0]}_plot.html')
-        fig.show()
-
     # Compute objective fn of simulation
     # ==================================
     # compute useful variables
     elec_prices = env.buildings[0].pricing.electricity_pricing
     carbon_intensities = env.buildings[0].carbon_intensity.carbon_intensity
     positive_building_draws = [np.clip(b.net_electricity_consumption,0,None) for b in env.buildings]
-    positive_grid_draw = np.clip(np.sum([b.net_electricity_consumption for b in env.buildings],axis=0),0,None)
+    grid_draw = np.sum([b.net_electricity_consumption for b in env.buildings],axis=0)
+    positive_grid_draw = np.clip(grid_draw,0,None)
 
     objective_contributions = []
     # Add electricity price contribution
@@ -287,13 +273,29 @@ def evaluate_system(
     elif clip_level in ['b']:
         objective_contributions += [np.sum([pos_draw @ carbon_intensities for pos_draw in positive_building_draws]) * cost_dict['carbon']]
     # Add grid connection exceedance cost
-    objective_contributions += [np.max((np.max(positive_grid_draw)/lp.delta_t - grid_con_capacity),0) * cost_dict['grid_excess'] * (env.time_steps*lp.delta_t)/24]
+    objective_contributions += [np.max((np.max(np.abs(grid_draw))/lp.delta_t - grid_con_capacity),0) * cost_dict['grid_excess'] * (env.time_steps*lp.delta_t)/24]
 
     if design: # Multiply opex costs up to design lifetime & add capex costs
         objective_contributions = [contr*cost_dict['opex_factor'] for contr in objective_contributions] # extend opex costs to design lifetime
         objective_contributions += [grid_con_capacity * cost_dict['grid_capacity'] * cost_dict['opex_factor'] * (env.time_steps*lp.delta_t)/24]
         objective_contributions += [np.sum([b.electrical_storage.capacity_history[0] for b in env.buildings]) * cost_dict['battery']]
         objective_contributions += [np.sum([b.pv.nominal_power for b in env.buildings]) * cost_dict['solar']]
+    
+    # Plot system profiles
+    # ====================
+    if plot:
+        fig = init_profile_fig(
+            y_titles={'primary': 'Building energy (kWh)', 'secondary': 'Battery SoC (kWh)'}
+            )
+
+        fig = add_profile(fig, grid_draw, name='Grid load', secondary_y=False)
+        for b in env.buildings:
+            fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} net load', secondary_y=False)
+            fig = add_profile(fig, b.pv.get_generation(b.energy_simulation.solar_generation), name=f'{b.name} solar', secondary_y=False)
+            fig = add_profile(fig, b.electrical_storage.soc, name=f'{b.name} SoC', secondary_y=True)
+
+        fig.write_html(f'{os.path.splitext(os.path.basename(schema_path))[0]}_plot.html')
+        fig.show()
 
     return {'objective': np.sum(objective_contributions), 'objective_contrs': objective_contributions}
 

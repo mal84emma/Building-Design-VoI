@@ -24,5 +24,6 @@ cost_dict = {
     'grid_capacity': 25e-2/0.95, # $/kW/day - note, this is waaay more expensive that current
     'grid_excess': 100e-2/0.95, # $/kW/day - note, this is a waaay bigger penalty than current
     'opex_factor': 20,
-    'battery_power_ratio': 0.4 # kW/kWh
+    'battery_power_ratio': 0.4, # kW/kWh
+    'grid_con_safety_factor': 1.33
 }
