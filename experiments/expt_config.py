@@ -20,7 +20,7 @@ n_post_samples = 320 # determined from MC convergence plots
 cost_dict = {
     'carbon': 1.0, # $/kgCO2
     'battery': 750.0, # $/kWh
-    'solar': 1250.0, # $/kWp
+    'solar': 1500.0, # $/kWp
     'grid_capacity': 25e-2/0.95, # $/kW/day - note, this is waaay more expensive that current
     'grid_excess': 100e-2/0.95, # $/kW/day - note, this is a waaay bigger penalty than current
     'opex_factor': 20,
