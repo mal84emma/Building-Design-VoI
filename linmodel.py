@@ -121,6 +121,7 @@ class LinProgModel():
                     cost_dict: Dict[str,float],
                     clip_level: str = 'm',
                     design: bool = False,
+                    grid_con_capacity: float = None,
                     scenario_weightings: List[float] = None,
                     use_parameters = False
                     ) -> None:
@@ -140,10 +141,14 @@ class LinProgModel():
                     - grid_capacity: grid connection capacity cost ($/kW/day)
                     - grid_excess: grid exceed capacity usage cost ($/kW excess/day)
                     - battery_power_ratio: ratio of power capacity to energy capacity for batteries (float)
+                    - cntrl_grid_cap_margin: margin on tracked max grid used used by control LP to prevent
+                        drift of max usage (float)
             clip_level (Str, optional): str, either 'd' (district), 'b' (building), or 'm' (mixed),
                 indicating the level at which to clip cost values in the objective function.
             design (Bool, optional): whether to construct the LP as a design problem - i.e. include
                 asset capacities as decision variables
+            grid_con_capacity (float, optional): grid connection capacity (kW) in system design. Used for
+                system simulation only. Defaults to None.
             scenario_weightings (List[float], optional): list of scenario OPEX weightings for objective.
             use_parameters (Bool, optional): whether to use CVXPY parameters for data or directly load data.
                 NOTE: parameters should be used for control LP where problem of identical structure is solved repeatedly,
@@ -161,6 +166,10 @@ class LinProgModel():
         self.cost_dict = cost_dict
 
         self.design = design
+
+        if not self.design:
+            assert grid_con_capacity is not None, "Grid connection capacity must be provided for operational LP."
+            assert grid_con_capacity > 0, "Grid connection capacity must be greater than 0."
 
         self.M = len(self.envs) # number of scenarios for optimisation
         self.N = len(self.envs[0].buildings) # number of buildings in model
@@ -187,6 +196,7 @@ class LinProgModel():
             self.battery_capacities = np.array([[b.electrical_storage.capacity_history[0]] for b in self.envs[0].buildings])
             self.solar_capacities = np.array([[b.pv.nominal_power] for b in self.envs[0].buildings])
             # NOTE: batttery & solar capacities must be common to all scenarios
+            self.grid_con_capacity = grid_con_capacity
             self.max_grid_usage = cp.Parameter(nonneg=True) # maximum grid usage so far in simulation (kW)
 
         if clip_level in ['d','m']:
@@ -248,11 +258,12 @@ class LinProgModel():
             self.constraints += [self.battery_inflows[m] <= self.battery_max_powers*self.delta_t]
             self.constraints += [self.battery_outflows[m] <= self.battery_max_powers*self.delta_t]
 
+            # storage energy constraints
             self.constraints += [self.SoC[m] <= self.battery_capacities]
             # NOTE: oddly cvxpy CAN provide lower compile times if constraints are defined per building
 
             # define grid energy flow variables
-            self.e_grids += [cp.sum(self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m] , axis=0)] # for [t+1,t+tau]
+            self.e_grids += [cp.sum(self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m], axis=0)] # for [t+1,t+tau]
 
             if clip_level == 'd':
                 # aggregate costs at district level (CityLearn <= 1.6 objective)
@@ -266,7 +277,7 @@ class LinProgModel():
             elif clip_level == 'b':
                 # aggregate costs at building level and average (CityLearn >= 1.7 objective)
                 # costs are computed from clipped building net power flow values - i.e. looking at mean building elec. cost
-                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m] ] # for [t+1,t+tau]
+                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m]] # for [t+1,t+tau]
                 self.constraints += [self.bxi[m] >= self.building_power_flows[m]] # for t \in [t+1,t+tau]
                 self.scenario_objective_contributions.append([
                     (cp.sum(self.bxi[m], axis=0) @ self.prices_param[m]),
@@ -278,7 +289,7 @@ class LinProgModel():
                 # costs at district level (estate level carbon reporting )
                 # i.e. carbon credit system but no inter-building energy trading
                 self.constraints += [self.xi[m] >= self.e_grids[m]] # for t \in [t+1,t+tau]
-                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m] ] # for [t+1,t+tau]
+                self.building_power_flows += [self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m]] # for [t+1,t+tau]
                 self.constraints += [self.bxi[m] >= self.building_power_flows[m]] # for t \in [t+1,t+tau]
                 self.scenario_objective_contributions.append([
                     (cp.sum(self.bxi[m], axis=0) @ self.prices_param[m]),
@@ -290,7 +301,10 @@ class LinProgModel():
                 threshold_capacity = self.grid_con_capacity/self.cost_dict['grid_con_safety_factor']
                 billing_period = self.tau
             else:
-                threshold_capacity = self.max_grid_usage
+                threshold_capacity = self.grid_con_capacity + (self.max_grid_usage-self.grid_con_capacity)*(1-self.cost_dict['cntrl_grid_cap_margin'])
+                # NOTE: the safety margin on grid usage prevents drift of the max grid usage, and corrects the inability of the myopic finite
+                # horizon LP to properly account for the long term excess usage cost. The margin is a heuristic that should be tuned, but its
+                # use was found to substantially improve overall performance of the control scheme.
                 billing_period = self.Tmax
 
             self.scenario_objective_contributions[-1].append(

@@ -280,7 +280,7 @@ def evaluate_system(
         objective_contributions += [grid_con_capacity * cost_dict['grid_capacity'] * cost_dict['opex_factor'] * (env.time_steps*lp.delta_t)/24]
         objective_contributions += [np.sum([b.electrical_storage.capacity_history[0] for b in env.buildings]) * cost_dict['battery']]
         objective_contributions += [np.sum([b.pv.nominal_power for b in env.buildings]) * cost_dict['solar']]
-    
+
     # Plot system profiles
     # ====================
     if plot:
