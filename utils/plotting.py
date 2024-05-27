@@ -30,10 +30,23 @@ def init_profile_fig(title=None, y_titles=None) -> Figure:
             )
         )
 
-    if 'primary' in y_titles:
-        fig.update_yaxes(title_text=y_titles['primary'], secondary_y=False)
-    if 'secondary' in y_titles:
-        fig.update_yaxes(title_text=y_titles['secondary'], secondary_y=True)
+    if 'y1' in y_titles:
+        fig.update_layout(yaxis=dict(title=y_titles['y1']))
+    if 'y2' in y_titles:
+        fig.update_layout(yaxis2=dict(
+            title=y_titles['y2'],
+            anchor="x",
+            overlaying="y",
+            side="right"
+        ))
+    if 'y3' in y_titles:
+        fig.update_layout(yaxis3=dict(
+            title=y_titles['y3'],
+            anchor="free",
+            overlaying="y",
+            side="right",
+            position=0.95
+        ))
 
     fig.update_xaxes(
         rangeselector=dict(
@@ -54,7 +67,7 @@ def init_profile_fig(title=None, y_titles=None) -> Figure:
 
     return fig
 
-def add_profile(fig, profile, name=None, secondary_y=False) -> Figure:
+def add_profile(fig, profile, name=None, yaxis='y') -> Figure:
 
     n_steps = len(profile)
     timestamps = pd.date_range(start='2000-01-01', periods=n_steps, freq='H')
@@ -63,9 +76,9 @@ def add_profile(fig, profile, name=None, secondary_y=False) -> Figure:
         x=timestamps,
         y=profile,
         name=name,
-        connectgaps=False
-        ),
-        secondary_y=secondary_y
+        connectgaps=False,
+        yaxis=yaxis
+        )
     )
 
     return fig
