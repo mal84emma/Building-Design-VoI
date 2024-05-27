@@ -25,6 +25,6 @@ cost_dict = {
     'grid_excess': 100e-2/0.95, # $/kW/day - note, this is a waaay bigger penalty than current
     'opex_factor': 20,
     'battery_power_ratio': 0.4, # kW/kWh
-    'grid_con_safety_factor': 1.33, # safety factor for grid connection capacity
-    'cntrl_grid_cap_margin': 0.1 # margin for grid capacity in control scheme to prevent drift
+    'grid_con_safety_factor': 1.25, # safety factor for grid connection capacity
+    'cntrl_grid_cap_margin': 0.01 # margin for grid capacity in control scheme to prevent drift
 }

@@ -273,7 +273,7 @@ def evaluate_system(
     elif clip_level in ['b']:
         objective_contributions += [np.sum([pos_draw @ carbon_intensities for pos_draw in positive_building_draws]) * cost_dict['carbon']]
     # Add grid connection exceedance cost
-    objective_contributions += [np.max((np.max(np.abs(grid_draw))/lp.delta_t - grid_con_capacity),0) * cost_dict['grid_excess'] * (env.time_steps*lp.delta_t)/24]
+    objective_contributions += [np.max([(np.max(np.abs(grid_draw))/lp.delta_t - grid_con_capacity),0]) * cost_dict['grid_excess'] * (env.time_steps*lp.delta_t)/24]
 
     if design: # Multiply opex costs up to design lifetime & add capex costs
         objective_contributions = [contr*cost_dict['opex_factor'] for contr in objective_contributions] # extend opex costs to design lifetime

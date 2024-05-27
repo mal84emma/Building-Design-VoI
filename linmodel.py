@@ -301,7 +301,7 @@ class LinProgModel():
                 threshold_capacity = self.grid_con_capacity/self.cost_dict['grid_con_safety_factor']
                 billing_period = self.tau
             else:
-                threshold_capacity = self.grid_con_capacity + (self.max_grid_usage-self.grid_con_capacity)*(1-self.cost_dict['cntrl_grid_cap_margin'])
+                threshold_capacity = self.max_grid_usage*(1-self.cost_dict['cntrl_grid_cap_margin'])
                 # NOTE: the safety margin on grid usage prevents drift of the max grid usage, and corrects the inability of the myopic finite
                 # horizon LP to properly account for the long term excess usage cost. The margin is a heuristic that should be tuned, but its
                 # use was found to substantially improve overall performance of the control scheme.
