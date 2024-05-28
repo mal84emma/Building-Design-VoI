@@ -38,6 +38,7 @@ def design_system(
         data_dir,
         building_file_pattern,
         cost_dict,
+        sizing_constraints=None,
         solver_kwargs={},
         num_reduced_scenarios=None,
         sim_duration=None,
@@ -58,6 +59,7 @@ def design_system(
             contain {id} and {year} placeholders.
         cost_dict (dict):Dictionary of cost parameters for Stochastic Program.
             Keys are as specified in `linmodel.py`.
+        sizing_constraints (Dict[str,float], optional): dictionary containing constraints for asset sizes in design LP.
         solver_kwargs (dict, optional): Solver options for LP. Defaults to {}.
         num_reduced_scenarios (int, optional): Number of scenarios to be used
             in Stochastic Program, selected via Scenario Reduction. If None,
@@ -128,7 +130,13 @@ def design_system(
 
     # set data and generate LP
     lp.set_time_data_from_envs(t_start=t_start,tau=sim_duration)
-    lp.generate_LP(cost_dict,design=True,scenario_weightings=reduced_probs,use_parameters=False)
+    lp.generate_LP(
+        cost_dict,
+        design=True,
+        sizing_constraints=sizing_constraints,
+        scenario_weightings=reduced_probs,
+        use_parameters=False
+    )
 
     ## Solve and report results
     # =========================

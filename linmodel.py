@@ -121,8 +121,9 @@ class LinProgModel():
                     cost_dict: Dict[str,float],
                     clip_level: str = 'm',
                     design: bool = False,
-                    grid_con_capacity: float = None,
                     scenario_weightings: List[float] = None,
+                    sizing_constraints: Dict[str,float] = None,
+                    grid_con_capacity: float = None,
                     use_parameters = False
                     ) -> None:
         """Set up CVXPY LP of CityLearn model with data specified by stored `env`s, for
@@ -141,15 +142,17 @@ class LinProgModel():
                     - grid_capacity: grid connection capacity cost ($/kW/day)
                     - grid_excess: grid exceed capacity usage cost ($/kW excess/day)
                     - battery_power_ratio: ratio of power capacity to energy capacity for batteries (float)
+                    - grid_con_safety_factor: safety factor for grid connection capacity during design (float)
                     - cntrl_grid_cap_margin: margin on tracked max grid used used by control LP to prevent
                         drift of max usage (float)
             clip_level (Str, optional): str, either 'd' (district), 'b' (building), or 'm' (mixed),
                 indicating the level at which to clip cost values in the objective function.
             design (Bool, optional): whether to construct the LP as a design problem - i.e. include
                 asset capacities as decision variables
+            scenario_weightings (List[float], optional): list of scenario OPEX weightings for objective.
+            sizing_constraints (Dict[str,float], optional): dictionary containing constraints for asset sizes in design LP.
             grid_con_capacity (float, optional): grid connection capacity (kW) in system design. Used for
                 system simulation only. Defaults to None.
-            scenario_weightings (List[float], optional): list of scenario OPEX weightings for objective.
             use_parameters (Bool, optional): whether to use CVXPY parameters for data or directly load data.
                 NOTE: parameters should be used for control LP where problem of identical structure is solved repeatedly,
                 and problem size is small. For design problem, load data directly to drastically reduce compile time.
@@ -159,13 +162,19 @@ class LinProgModel():
 
         assert clip_level in ['d','b','m'], f"`clip_level` value must be either 'd' (district), 'b' (building), or 'm' (mixed), {clip_level} provided."
 
-        for key in ['carbon','battery','solar','grid_capacity','grid_excess','opex_factor','battery_power_ratio']:
+        for key in ['carbon','battery','solar','grid_capacity','grid_excess','opex_factor','battery_power_ratio','grid_con_safety_factor','cntrl_grid_cap_margin']:
             assert key in cost_dict.keys(), f"Key {key} missing from cost_dict."
         assert all([type(val) in [int,float] for val in cost_dict.values()])
         assert cost_dict['opex_factor'] > 0, "opex_factor must be greater than 0."
         self.cost_dict = cost_dict
 
         self.design = design
+
+        if sizing_constraints is not None:
+            assert self.design == True, "Sizing constraints can only be applied to design LP."
+            assert all([key in ['battery','solar'] for key in sizing_constraints.keys()]), "Sizing constraints must be provided for battery and solar."
+            assert all([val > 0 for val in sizing_constraints.values() if val is not None]), "Sizing constraints must be greater than 0."
+        self.sizing_constraints = sizing_constraints
 
         if not self.design:
             assert grid_con_capacity is not None, "Grid connection capacity must be provided for operational LP."
@@ -237,6 +246,14 @@ class LinProgModel():
         self.e_grids = []
         self.building_power_flows = []
         self.scenario_objective_contributions = []
+
+        # asset sizing constraints
+        if self.sizing_constraints is not None:
+            if self.sizing_constraints['battery'] is not None:
+                self.constraints += [self.battery_capacities <= self.sizing_constraints['battery']]
+            if self.sizing_constraints['solar'] is not None:
+                self.constraints += [self.solar_capacities <= self.sizing_constraints['solar']]
+
 
         for m in range(self.M): # for each scenario
 

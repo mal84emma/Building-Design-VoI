@@ -45,7 +45,7 @@ def init_profile_fig(title=None, y_titles=None) -> Figure:
             anchor="free",
             overlaying="y",
             side="right",
-            position=0.9
+            position=0.975
         ))
 
     fig.update_xaxes(
