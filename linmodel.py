@@ -389,12 +389,12 @@ class LinProgModel():
             self.carbon_intensities_param[m].value = self.carbon_intensities[m].clip(min=0)
 
 
-    def solve_LP(self, return_profiles=False, **kwargs):
+    def solve_LP(self, return_profiles=True, **kwargs):
         """Solve LP model of specified problem.
 
         Args:
             return_profiles (bool): whether to return the optimised energy profiles
-                for each debugging. Defaults to False.
+                for control and debugging. Defaults to True.
             **kwargs: optional keyword arguments for solver settings.
 
         Returns:

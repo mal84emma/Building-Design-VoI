@@ -39,12 +39,13 @@ def design_system(
         building_file_pattern,
         cost_dict,
         sizing_constraints=None,
-        solver_kwargs={},
+        solver_kwargs={}, # default to using HiGHS
         num_reduced_scenarios=None,
         sim_duration=None,
         t_start=0,
         process_id=None,
-        show_progress=False
+        show_progress=False,
+        return_profiles=False
     ):
     """Use Stochastic Program formulation to design district energy system for
     given set of scenarios.
@@ -72,6 +73,8 @@ def design_system(
         process_id (int, optional): Unique process ID for tagging schemas when
             fn called via multiprocessing. Defaults to None.
         show_progress (bool, optional): Whether to display progress. Defaults to False.
+        return_profiles (bool): whether to return the optimised energy profiles
+                for each debugging. Defaults to False.
 
     Returns:
         dict: Dictionary of LP results return from `LinProgModel.solve_LP`.
@@ -124,7 +127,7 @@ def design_system(
         envs.append(CityLearnEnv(schema=schema_path))
 
         if m == 0: # initialise lp object
-            lp = LinProgModel(env=envs[m])
+            lp: LinProgModel = LinProgModel(env=envs[m])
         else:
             lp.add_env(env=envs[m])
 
@@ -140,11 +143,13 @@ def design_system(
 
     ## Solve and report results
     # =========================
-    if solver_kwargs is None: # default to using HiGHS
-        solver_kwargs = {'solver': 'SCIPY'}
-
     if show_progress: print("Solving LP...")
-    lp_results = lp.solve_LP(**solver_kwargs,verbose=show_progress,canon_backend=cp.SCIPY_CANON_BACKEND)
+    lp_results = lp.solve_LP(
+        **solver_kwargs,
+        return_profiles=return_profiles,
+        verbose=show_progress,
+        canon_backend=cp.SCIPY_CANON_BACKEND
+    )
     # SCIPY compilation backend provides somewhat better performance on sparse problem
 
     results = lp_results.copy()
@@ -172,7 +177,7 @@ def evaluate_system(
         show_progress=False,
         plot=False
     ):
-    """Simulate district energy system with given design (schema) for given
+    """Simulate district energy system with given design (schema) for a given
     scenario and evaluate its performance (operational/system cost).
 
     Args:
@@ -188,7 +193,7 @@ def evaluate_system(
         clip_level (str, optional): Level at which to clip system costs.
             See `linmodel.py` for more info. Defaults to 'm'.
         solver_kwargs (dict, optional): Kwargs to pass to LP solver.
-            Defaults to {}.
+            Defaults to {}. This causes HiGHs to be used by `solve_LP`.
         show_progress (bool, optional): Whether to display simulation progress
             in console. Defaults to False.
         plot (bool, optional): Whether to plot system profiles for simulated
@@ -217,7 +222,7 @@ def evaluate_system(
     current_socs = np.array([
         [charge*capacity for charge,capacity in\
          zip(np.array(observations)[:,soc_obs_index],lp.battery_capacities.flatten())]
-        ]) # get initial SoCs
+        ]) # get initial SoCs (kWh)
     max_grid_usage = grid_con_capacity
 
     # Execute control loop.
@@ -233,8 +238,8 @@ def evaluate_system(
                 lp_start = time.perf_counter()
                 lp.set_time_data_from_envs(t_start=num_steps, tau=tau, initial_socs=current_socs) # load ground truth data
                 lp.set_LP_parameters(max_grid_usage=max_grid_usage)
-                results = lp.solve_LP(**solver_kwargs,ignore_dpp=False,verbose=False)
-                actions: np.array = results['battery_net_in_flows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities
+                results = lp.solve_LP(**solver_kwargs,ignore_dpp=False,return_profiles=True,verbose=False)
+                actions = results['battery_net_in_flows'][0][:,0].reshape((lp.N,1))/lp.battery_capacities # normalised battery control actions
                 lp_solver_time_elapsed += time.perf_counter() - lp_start
 
             else: # if not enough time left to grab a full length ground truth forecast: do nothing
@@ -257,7 +262,8 @@ def evaluate_system(
 
             # Iterate step counter
             num_steps += 1
-
+        # ================
+        # end control loop
     if show_progress: print("Evaluation complete.")
 
     # Compute objective fn of simulation
@@ -384,9 +390,13 @@ def evaluate_multi_system_scenarios(
     if n_processes is None:
         eval_results = [
             evaluate_system(
-                schema_path, cost_dict, system_design['grid_con_capacity'], design=design,
-                    tau=tau, solver_kwargs=solver_kwargs, show_progress=show_progress, plot=plot)\
-                        for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
+                schema_path,
+                cost_dict, system_design['grid_con_capacity'],
+                design=design, tau=tau,
+                solver_kwargs=solver_kwargs,
+                show_progress=show_progress, plot=plot
+            )\
+                for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
         ]
     else:
         eval_wrapper = partial(evaluate_system,
