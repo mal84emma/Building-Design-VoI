@@ -91,7 +91,7 @@ class LinProgModel():
                 period before t_start (kWh). Defaults to None.
         """
 
-        if not t_start: self.t_start = 0
+        if t_start is None: self.t_start = 0
         else: self.t_start = t_start
 
         if not hasattr(self, 'tau'):
@@ -108,13 +108,17 @@ class LinProgModel():
             self.battery_initial_socs = np.array([[b.electrical_storage.initial_soc for b in env.buildings] for env in self.envs])
 
         self.elec_loads = np.array(
-            [[b.energy_simulation.non_shiftable_load[self.t_start+1:self.t_start+self.tau+1] for b in env.buildings] for env in self.envs])
+                [[b.energy_simulation.non_shiftable_load[self.t_start+1:self.t_start+self.tau+1] for b in env.buildings] for env in self.envs]
+            )
         self.solar_gens = np.array( # NOTE: this is the NORMALISED solar generation (W/kWp) -> [kW/kWp]
-            [[b.energy_simulation.solar_generation[self.t_start+1:self.t_start+self.tau+1]/1e3 for b in env.buildings] for env in self.envs])
+                [[b.energy_simulation.solar_generation[self.t_start+1:self.t_start+self.tau+1]/1e3 for b in env.buildings] for env in self.envs]
+            )
         self.prices = np.array(
-            [env.buildings[0].pricing.electricity_pricing[self.t_start+1:self.t_start+self.tau+1] for env in self.envs])
+                [env.buildings[0].pricing.electricity_pricing[self.t_start+1:self.t_start+self.tau+1] for env in self.envs]
+            )
         self.carbon_intensities = np.array(
-            [env.buildings[0].carbon_intensity.carbon_intensity[self.t_start+1:self.t_start+self.tau+1] for env in self.envs])
+                [env.buildings[0].carbon_intensity.carbon_intensity[self.t_start+1:self.t_start+self.tau+1] for env in self.envs]
+            )
 
 
     def generate_LP(self,
@@ -186,7 +190,7 @@ class LinProgModel():
 
         if scenario_weightings is not None:
             assert np.isclose(np.sum(scenario_weightings), 1.0), "Scenario weightings must sum to 1."
-        else:
+        else: # assume scenarios equally probable
             scenario_weightings = np.ones(self.M)/self.M
 
 
@@ -195,7 +199,7 @@ class LinProgModel():
         self.SoC = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # for [t+1,t+tau] - (kWh)
         self.battery_inflows = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # for [t,t+tau-1] - (kWh)
         self.battery_outflows = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # for [t,t+tau-1] - (kWh)
-        # NOTE: cvxpy does not like pos(e)*eta - neg(e)/eta, so split positive and negative flows into separate decision variables
+        # NOTE: cvxpy does not like pos(e)*eta - neg(e)/eta, so split positive and negative battery flows into separate decision variables
 
         if self.design:
             self.battery_capacities = cp.Variable(shape=(self.N,1), nonneg=True) # battery energy capacities (kWh)
@@ -209,7 +213,7 @@ class LinProgModel():
             self.max_grid_usage = cp.Parameter(nonneg=True) # maximum grid usage so far in simulation (kW)
 
         if clip_level in ['d','m']:
-            self.xi = {m: cp.Variable(shape=(self.tau), nonneg=True) for m in range(self.M)} # net power flow slack variable
+            self.xi = {m: cp.Variable(shape=(self.tau), nonneg=True) for m in range(self.M)} # grid energy flow slack variable
         if clip_level in ['b','m']:
             self.bxi = {m: cp.Variable(shape=(self.N,self.tau), nonneg=True) for m in range(self.M)} # building level xi
         # NOTE: have to use slack variables, as cp.pos() is not DPP compliant
@@ -236,24 +240,25 @@ class LinProgModel():
 
         # set battery power capacities based off energy capacities & discharge/volume ratio
         self.battery_max_powers = self.battery_capacities * self.cost_dict['battery_power_ratio']
-        # define solar nominal power generation variables
+        # define solar nominal power generation variables (kWh)
         self.solar_gens_vals = {m: cp.multiply(self.solar_gens_param[m],self.solar_capacities) for m in range(self.M)}
 
 
-        # set up scenario constraints & objective contr.
-        # =============================================
         self.constraints = []
-        self.e_grids = []
-        self.building_power_flows = []
-        self.scenario_objective_contributions = []
 
-        # asset sizing constraints
+        # set up asset sizing constraints
+        # ===============================
         if self.sizing_constraints is not None:
             if self.sizing_constraints['battery'] is not None:
                 self.constraints += [self.battery_capacities <= self.sizing_constraints['battery']]
             if self.sizing_constraints['solar'] is not None:
                 self.constraints += [self.solar_capacities <= self.sizing_constraints['solar']]
 
+        # set up scenario constraints & objective contributions
+        # =====================================================
+        self.e_grids = []
+        self.building_power_flows = []
+        self.scenario_objective_contributions = []
 
         for m in range(self.M): # for each scenario
 
@@ -279,7 +284,7 @@ class LinProgModel():
             self.constraints += [self.SoC[m] <= self.battery_capacities]
             # NOTE: oddly cvxpy CAN provide lower compile times if constraints are defined per building
 
-            # define grid energy flow variables
+            # define grid energy flow variables (energy drawn from grid at each timestep)
             self.e_grids += [cp.sum(self.elec_loads_param[m] - self.solar_gens_vals[m] + self.battery_inflows[m] - self.battery_outflows[m], axis=0)] # for [t+1,t+tau]
 
             if clip_level == 'd':
@@ -351,7 +356,6 @@ class LinProgModel():
         self.obj = cp.sum(self.objective_contributions)
         self.objective = cp.Minimize(self.obj)
 
-
         # construct problem
         self.problem = cp.Problem(self.objective,self.constraints)
 
@@ -374,7 +378,7 @@ class LinProgModel():
             self.max_grid_usage.value = max_grid_usage
 
         # NOTE: clip parameter values at 0 to prevent LP solve issues
-        # This requirement is for the current LP formulation and could be
+        # This requirement is for the current LP formulation (??) and could be
         # relaxed with an alternative model setup.
 
         for m in range(self.M):
@@ -385,10 +389,12 @@ class LinProgModel():
             self.carbon_intensities_param[m].value = self.carbon_intensities[m].clip(min=0)
 
 
-    def solve_LP(self, **kwargs):
+    def solve_LP(self, return_profiles=False, **kwargs):
         """Solve LP model of specified problem.
 
         Args:
+            return_profiles (bool): whether to return the optimised energy profiles
+                for each debugging. Defaults to False.
             **kwargs: optional keyword arguments for solver settings.
 
         Returns:
@@ -432,13 +438,17 @@ class LinProgModel():
             'objective': self.objective.value,
             'objective_contrs': [val.value for val in self.objective_contributions],
             'scenario_contrs': [[val.value for val in m] for m in self.scenario_objective_contributions] if self.M > 1 else None,
-            'SOC': {m: self.SoC[m].value for m in range(self.M)},
-            'battery_net_in_flows': {m: self.battery_inflows[m].value - self.battery_outflows[m].value for m in range(self.M)},
-            'e_grids': {m: self.e_grids[m].value for m in range(self.M)},
             'battery_capacities': self.battery_capacities.value if self.design else None,
             'solar_capacities': self.solar_capacities.value if self.design else None,
             'grid_con_capacity': self.grid_con_capacity.value if self.design else None
         }
+
+        if return_profiles:
+            results.update({
+                'SOC': {m: self.SoC[m].value for m in range(self.M)},
+                'battery_net_in_flows': {m: self.battery_inflows[m].value - self.battery_outflows[m].value for m in range(self.M)},
+                'e_grids': {m: self.e_grids[m].value for m in range(self.M)}
+            })
 
         return results
 
