@@ -174,6 +174,7 @@ def evaluate_system(
         tau=48,
         clip_level='m',
         solver_kwargs={},
+        use_battery=True,
         show_progress=False,
         plot=False
     ):
@@ -194,6 +195,9 @@ def evaluate_system(
             See `linmodel.py` for more info. Defaults to 'm'.
         solver_kwargs (dict, optional): Kwargs to pass to LP solver.
             Defaults to {}. This causes HiGHs to be used by `solve_LP`.
+        use_battery (bool, optional): Whether to use battery control, i.e.
+            whether to use battery system to improve operation. If False all
+            actions are set to 0. Defaults to True.
         show_progress (bool, optional): Whether to display simulation progress
             in console. Defaults to False.
         plot (bool, optional): Whether to plot system profiles for simulated
@@ -233,7 +237,7 @@ def evaluate_system(
 
             # Compute MPC action.
             # ====================================================================
-            if (num_steps <= (env.time_steps - 1) - tau):
+            if (num_steps <= (env.time_steps - 1) - tau) and use_battery:
                 # setup and solve predictive Linear Program model of system
                 lp_start = time.perf_counter()
                 lp.set_time_data_from_envs(t_start=num_steps, tau=tau, initial_socs=current_socs) # load ground truth data
@@ -322,6 +326,7 @@ def evaluate_multi_system_scenarios(
         cost_dict,
         tau=48,
         solver_kwargs={},
+        use_battery=True,
         n_processes=None,
         show_progress=False,
         plot=False
@@ -349,6 +354,9 @@ def evaluate_multi_system_scenarios(
             Defaults to 48.
         solver_kwargs (dict, optional): Kwargs to pass to LP solver.
             Defaults to {}.
+        use_battery (bool, optional): Whether to use battery control, i.e.
+            whether to use battery system to improve operation. If False all
+            actions are set to 0. Defaults to True.
         n_processes (int, optional): Number of processes to use for running
             simulations in parallel using `multiprocess.Pool`. If None, sims
             are run sequentially. Defaults to None.
@@ -394,6 +402,7 @@ def evaluate_multi_system_scenarios(
                 cost_dict, system_design['grid_con_capacity'],
                 design=design, tau=tau,
                 solver_kwargs=solver_kwargs,
+                use_battery=use_battery,
                 show_progress=show_progress, plot=plot
             )\
                 for schema_path in tqdm(scenario_schema_paths, disable=(not show_progress))
@@ -403,6 +412,7 @@ def evaluate_multi_system_scenarios(
                                cost_dict=cost_dict, grid_con_capacity=system_design['grid_con_capacity'],
                                design=design, tau=tau,
                                solver_kwargs=solver_kwargs,
+                               use_battery=use_battery,
                                show_progress=False, plot=False
                               )
         with mp.Pool(n_processes) as pool:
