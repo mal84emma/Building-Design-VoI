@@ -15,7 +15,7 @@ from energy_system import design_system, evaluate_multi_system_scenarios
 
 if __name__ == '__main__':
 
-    n_processes = 5 # mp.cpu_count()
+    n_processes = mp.cpu_count()
 
     options_dicts = [
         {
