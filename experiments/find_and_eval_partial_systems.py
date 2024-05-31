@@ -60,14 +60,6 @@ if __name__ == '__main__':
         except:
             solver_kwargs = {}
 
-        ## temp
-        from prob_models import prior_model
-        n_buildings = 3
-        num_reduced_scenarios = 3
-        np.random.seed(0)
-        scenarios = prior_model(n_buildings, 20, ids, years)
-        ##
-
 
         for d in options_dicts: # options specifiying each partial system
 
