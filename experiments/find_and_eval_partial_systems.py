@@ -1,0 +1,110 @@
+"""Quantify benefit derived from each part of the system for prior case."""
+
+# Hack to emulate running files from root directory.
+import os
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+# run using `python -m experiments.{fname}`
+
+import warnings
+import numpy as np
+import gurobipy as gp
+import multiprocessing as mp
+from utils import get_Gurobi_WLS_env, data_handling
+from energy_system import design_system, evaluate_multi_system_scenarios
+
+if __name__ == '__main__':
+
+    n_processes = 5 # mp.cpu_count()
+
+    options_dicts = [
+        {
+            'case_name': 'constr_solar',
+            'sizing_constraints': {'battery':None,'solar':250.0},
+            'use_battery': True
+        },
+        {
+            'case_name': 'battery_only',
+            'sizing_constraints': {'battery':None,'solar':1e-6},
+            'use_battery': True
+        },
+        {
+            'case_name': 'solar_only',
+            'sizing_constraints': {'battery':1e-6,'solar':None},
+            'use_battery': False
+        },
+        {
+            'case_name': 'neither',
+            'sizing_constraints': {'battery':1e-6,'solar':1e-6},
+            'use_battery': False
+        }
+    ]
+
+
+    with warnings.catch_warnings():
+        # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
+
+        from experiments.expt_config import *
+
+        # Load prior scenario samples.
+        scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
+        scenarios = data_handling.load_scenarios(scenarios_path)
+        n_buildings = scenarios.shape[1]
+
+        try:
+            m = gp.Model()
+            e = get_Gurobi_WLS_env()
+            solver_kwargs = {'solver': 'GUROBI', 'env': e}
+        except:
+            solver_kwargs = {}
+
+        ## temp
+        from prob_models import prior_model
+        n_buildings = 3
+        num_reduced_scenarios = 3
+        np.random.seed(0)
+        scenarios = prior_model(n_buildings, 20, ids, years)
+        ##
+
+
+        for d in options_dicts: # options specifiying each partial system
+
+            # Design system.
+            # ==============
+            design_results = design_system(
+                scenarios,
+                dataset_dir,
+                building_fname_pattern,
+                cost_dict,
+                sizing_constraints=d['sizing_constraints'],
+                solver_kwargs=solver_kwargs,
+                num_reduced_scenarios=num_reduced_scenarios,
+                show_progress=True
+            )
+
+            print(d['case_name'])
+            for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
+                print(design_results[key])
+
+            out_path = os.path.join('experiments','results','prior',d['case_name']+'_design_results.csv')
+            data_handling.save_design_results(design_results, out_path)
+
+            # Evaluate system.
+            # ================
+            mean_cost, eval_results = evaluate_multi_system_scenarios(
+                scenarios,
+                design_results,
+                dataset_dir,
+                building_fname_pattern,
+                design=True,
+                cost_dict=cost_dict,
+                use_battery=d['use_battery'],
+                n_processes=n_processes,
+                show_progress=True
+            )
+            print(d['case_name'], mean_cost)
+
+            out_path = os.path.join('experiments','results','prior',d['case_name']+'_eval_results.csv')
+            data_handling.save_eval_results(eval_results, design_results, scenarios, out_path)
