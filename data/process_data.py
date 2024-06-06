@@ -52,7 +52,7 @@ if __name__ == '__main__':
     weather_data.to_csv(os.path.join(out_dir, 'weather.csv'), index=False) # note, weather data is not used
 
     # Load in 2022 solar data
-    solar_data = pd.read_csv(os.path.join(data_dir, 'solar_2022.csv'), header=0)['solar generation [W/kW]'].to_numpy()
+    solar_data = pd.read_csv(os.path.join(data_dir, 'solar_2023.csv'), header=0)['solar generation [W/kW]'].to_numpy()
 
     ## Process load data
     # Combine heat and electrical load data then save first 8760 hours
