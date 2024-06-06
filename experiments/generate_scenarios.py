@@ -13,10 +13,7 @@ from utils import data_handling
 
 if __name__ == '__main__':
 
-    from experiments.expt_config import save_dir, ids, years
-
-    # Set parameters.
-    n_buildings = 8
+    from experiments.expt_config import *
 
     n_samples = 1000
 
