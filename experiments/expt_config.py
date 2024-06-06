@@ -12,7 +12,7 @@ years = list(range(2012, 2018))
 ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
 
 # Simulation parameters
-n_buildings = 12
+n_buildings = 10
 num_reduced_scenarios = 10 # no. of reduced scenarios used in Bryn's thesis
 n_post_samples = 320 # determined from MC convergence plots
 
