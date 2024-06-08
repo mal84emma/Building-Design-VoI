@@ -98,7 +98,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     info_type = 'type'
-    n_concurrent_designs = 10
+    n_concurrent_designs = 8
     # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
 
     with warnings.catch_warnings():
