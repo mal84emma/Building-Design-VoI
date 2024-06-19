@@ -33,8 +33,10 @@ if __name__ == '__main__':
         post_mean_costs = [np.mean([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]
         posterior_mean_cost = np.mean(post_mean_costs)
         posterior_mean_cost_std = np.mean([np.std([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results])
+        posterior_overall_cost_std = np.std([res['objective'] for scenario_results in post_eval_results for res in scenario_results])
         print(f'Posterior Mean Cost ({info_type} info): {posterior_mean_cost}')
-        print(f'Posterior Cost Std ({info_type} info): {posterior_mean_cost_std}')
+        print(f'Posterior Cost Mean Std ({info_type} info): {posterior_mean_cost_std}')
+        print(f'Posterior Overall Cost Std ({info_type} info): {posterior_overall_cost_std}')
         print('Mean min-max: ', np.min(post_mean_costs), np.max(post_mean_costs))
         print('Overall min-max: ', *[f([res['objective'] for scenario_results in post_eval_results for res in scenario_results]) for f in [np.min, np.max]])
 
