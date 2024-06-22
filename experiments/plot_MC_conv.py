@@ -33,8 +33,10 @@ if __name__ == '__main__':
     lss = ['--',':']
     fig = plt.figure()
     plt.plot(range(1,len(prior_MC_estimates)+1), np.array(prior_MC_estimates)/1e6, 'k-', label='Prior')
+    plt.hlines(prior_MC_estimates[-1]/1e6, 0, len(post_MC_estimates[info_type]), colors='k', linestyles='-', alpha=0.5)
     for i,info_type in enumerate(['type']): # 'profile'
         plt.plot(range(1,len(post_MC_estimates[info_type])+1), np.array(post_MC_estimates[info_type])/1e6, c='k', ls=lss[i], label=f'Posterior ({info_type} info)')
+        plt.hlines(post_MC_estimates[info_type][-1]/1e6, 0, len(post_MC_estimates[info_type]), colors='k', linestyles=lss[i], alpha=0.5)
     plt.xlabel('Number of scenarios')
     plt.ylabel('Mean cost ($m)')
     plt.xlim(0,320)#len(prior_MC_estimates)+1)
