@@ -27,6 +27,7 @@ def posterior_design(
         data_dir,
         building_file_pattern,
         cost_dict,
+        sizing_constraints={},
         solver_kwargs={},
         num_reduced_scenarios=None,
         show_progress=False
@@ -47,6 +48,7 @@ def posterior_design(
         data_dir (path):
         building_file_pattern (str):
         cost_dict (dict):
+        sizing_constraints (dict, optional): Defaults to {}.
         solver_kwargs (dict, optional): Defaults to {}.
         num_reduced_scenarios (int, optional): Defaults to None.
         show_progress (bool, optional): Defaults to False.
@@ -75,6 +77,7 @@ def posterior_design(
             data_dir,
             building_file_pattern,
             cost_dict,
+            sizing_constraints=sizing_constraints,
             solver_kwargs=solver_kwargs,
             num_reduced_scenarios=num_reduced_scenarios,
             show_progress=show_progress if scenario_num != None else False,
@@ -101,6 +104,8 @@ if __name__ == '__main__':
     n_concurrent_designs = 8
     # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
 
+    sizing_constraints = {'battery':None,'solar':150.0}
+
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -118,11 +123,11 @@ if __name__ == '__main__':
 
         # Load prior scenario samples.
         scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
-        scenarios = data_handling.load_scenarios(scenarios_path)
+        scenarios = data_handling.load_scenarios(scenarios_path)[:]
         n_buildings = scenarios.shape[1]
 
         # Set up output directory.
-        out_dir = os.path.join('experiments','results',f'posterior_{info_type}_info','designs')
+        out_dir = os.path.join('experiments','results',f'posterior_constr_solar_{info_type}_info','designs')
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
@@ -136,6 +141,7 @@ if __name__ == '__main__':
             data_dir=dataset_dir,
             building_file_pattern=building_fname_pattern,
             cost_dict=cost_dict,
+            sizing_constraints=sizing_constraints,
             solver_kwargs=solver_kwargs,
             num_reduced_scenarios=num_reduced_scenarios
         )

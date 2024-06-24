@@ -116,11 +116,11 @@ if __name__ == '__main__':
         n_buildings = scenarios.shape[1]
 
         # Load posterior optimal system designs.
-        designs_path_pattern = os.path.join('experiments','results',f'posterior_{info_type}_info','designs','s{j}_posterior_design_results.csv')
+        designs_path_pattern = os.path.join('experiments','results',f'posterior_solar_constr_{info_type}_info','designs','s{j}_posterior_design_results.csv')
         scenario_tuples = [(j,scenario) for j,scenario in enumerate(scenarios)][:100] ##temp
 
         # Set up output directory.
-        out_dir = os.path.join('experiments','results',f'posterior_{info_type}_info','evals')
+        out_dir = os.path.join('experiments','results',f'posterior_solar_constr_{info_type}_info','evals')
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
