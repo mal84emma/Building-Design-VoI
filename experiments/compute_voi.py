@@ -21,6 +21,7 @@ if __name__ == '__main__':
     prior_cost_std = np.std(prior_costs)
     print(f'Prior Mean Cost: {prior_mean_cost}')
     print(f'Prior Cost Std: {prior_cost_std}')
+    print(f'Prior Mean Std Error: {prior_cost_std/np.sqrt(len(prior_costs))}')
     print('Overall min-max: ', np.min(prior_costs), np.max(prior_costs))
 
     # Load posterior eval results.
@@ -35,6 +36,7 @@ if __name__ == '__main__':
         posterior_mean_cost_std = np.mean([np.std([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results])
         posterior_overall_cost_std = np.std([res['objective'] for scenario_results in post_eval_results for res in scenario_results])
         print(f'Posterior Mean Cost ({info_type} info): {posterior_mean_cost}')
+        print(f'Posterior Mean Cost Std Error ({info_type} info): {np.std(post_mean_costs)/np.sqrt(len(post_mean_costs))}')
         print(f'Posterior Cost Mean Std ({info_type} info): {posterior_mean_cost_std}')
         print(f'Posterior Overall Cost Std ({info_type} info): {posterior_overall_cost_std}')
         print('Mean min-max: ', np.min(post_mean_costs), np.max(post_mean_costs))

@@ -21,8 +21,8 @@ def visualise_building_data(building_file_path, fpath='temp.html', show=False):
         y_titles={'primary': 'Equipment load [kWh]', 'secondary': 'Heating load [kWh]'}
     )
 
-    fig = add_profile(fig, elec_data, name='Electricity load', secondary_y=False)
-    if np.any(heat_data > 0.0): fig = add_profile(fig, heat_data, name='Heating load', secondary_y=True)
+    fig = add_profile(fig, elec_data, name='Electricity load')
+    if np.any(heat_data > 0.0): fig = add_profile(fig, heat_data, name='Heating load', yaxis='y2')
 
     fig.write_html(fpath)
     if show: fig.show()
@@ -38,8 +38,11 @@ if __name__ == '__main__':
     bname_pattern = 'UCam_Building_b%s.csv'
     bname_pattern = f'ly_%s-{year}.csv'
 
-    for id in ids:
-        for year in [2012]: # range(2012, 2018):
+    # for id in ids:
+    #     visualise_building_data(os.path.join('from-database', bname_pattern % ids[0]), 'temp.html', True)
+
+    for id in [104]: # ids:
+        for year in range(2012, 2018):
             bname_pattern = f'ly_%s-{year}.csv'
             building_file_path = os.path.join(data_dir, bname_pattern % id)
             fpath = 'temp.html'
