@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
         # Load prior scenario samples.
         scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
-        scenarios = data_handling.load_scenarios(scenarios_path)[:]
+        scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
         # Set up output directory.
