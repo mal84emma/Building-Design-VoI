@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import time
@@ -14,7 +14,7 @@ import gurobipy as gp
 import multiprocess as mp
 from functools import partial
 from utils import get_Gurobi_WLS_env, data_handling
-from prob_models import posterior_model
+from prob_models import shape_posterior_model
 from energy_system import design_system
 
 
@@ -68,7 +68,7 @@ def posterior_design(
         sampled_scenarios = [measured_scenario]
         num_reduced_scenarios = None
     elif info_type == 'type':
-        sampled_scenarios = posterior_model(measured_scenario[:,0], n_post_samples, years)
+        sampled_scenarios = shape_posterior_model(measured_scenario[:,0], n_post_samples, years)
 
     # Design system.
     start = time.time()
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
-        from experiments.expt_config import *
+        from experiments.shape.expt_config import *
         n_post_samples = 1000 # adjust for design
 
         try:
@@ -122,12 +122,12 @@ if __name__ == '__main__':
             solver_kwargs = {}
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
         scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
         # Set up output directory.
-        out_dir = os.path.join('experiments','results',f'posterior_constr_solar_{info_type}_info','designs')
+        out_dir = os.path.join(results_dir,f'posterior_constr_solar_{info_type}_info','designs')
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 

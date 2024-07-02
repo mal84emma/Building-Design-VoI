@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import warnings
@@ -20,15 +20,15 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
-        from experiments.expt_config import *
+        from experiments.shape.expt_config import *
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
         scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
         # Load prior optimal system design.
-        design_results_path = os.path.join('experiments','results','prior','prior_design_results.csv')
+        design_results_path = os.path.join(results_dir,'prior','prior_design_results.csv')
         system_design = data_handling.load_design_results(design_results_path)
 
         # Evaluate prior optimal system design.
@@ -45,5 +45,5 @@ if __name__ == '__main__':
         print(mean_cost)
 
         # Save results.
-        out_path = os.path.join('experiments','results','prior','prior_eval_results.csv')
+        out_path = os.path.join(results_dir,'prior','prior_eval_results.csv')
         data_handling.save_eval_results(eval_results, system_design, scenarios, out_path)

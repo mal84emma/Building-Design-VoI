@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import warnings
@@ -46,10 +46,10 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
-        from experiments.expt_config import *
+        from experiments.shape.expt_config import *
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
         scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
@@ -80,7 +80,7 @@ if __name__ == '__main__':
             for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
                 print(design_results[key])
 
-            out_path = os.path.join('experiments','results','prior',d['case_name']+'_design_results.csv')
+            out_path = os.path.join(results_dir,'prior',d['case_name']+'_design_results.csv')
             data_handling.save_design_results(design_results, out_path)
 
             # Evaluate system.
@@ -98,5 +98,5 @@ if __name__ == '__main__':
             )
             print(d['case_name'], mean_cost)
 
-            out_path = os.path.join('experiments','results','prior',d['case_name']+'_eval_results.csv')
+            out_path = os.path.join(results_dir,'prior',d['case_name']+'_eval_results.csv')
             data_handling.save_eval_results(eval_results, design_results, scenarios, out_path)

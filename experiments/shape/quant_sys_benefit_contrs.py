@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import numpy as np
@@ -12,13 +12,15 @@ from utils import data_handling
 
 if __name__ == '__main__':
 
+    from experiments.shape.expt_config import *
+
     cases = ['prior','constr_solar','battery_only','solar_only','neither']
     results = {}
 
     # Load eval results for each system case.
     # =======================================
     for case in cases:
-        eval_results_path = os.path.join('experiments','results','prior',case+'_eval_results.csv')
+        eval_results_path = os.path.join(results_dir,'prior',case+'_eval_results.csv')
         eval_results = data_handling.load_eval_results(eval_results_path)
         costs = [res['objective'] for res in eval_results]
         case_results = {

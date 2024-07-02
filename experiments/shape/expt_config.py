@@ -3,7 +3,7 @@
 import os
 
 # Directorioes and file patterns
-save_dir = os.path.join('experiments','results')
+results_dir = os.path.join('experiments','shape','results')
 dataset_dir = os.path.join('data','processed')
 building_fname_pattern = 'ly_{id}-{year}.csv'
 

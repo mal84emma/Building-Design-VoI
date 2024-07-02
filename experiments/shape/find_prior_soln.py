@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import warnings
@@ -18,10 +18,10 @@ if __name__ == '__main__':
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
 
-        from experiments.expt_config import *
+        from experiments.shape.expt_config import *
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
         scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
@@ -47,5 +47,5 @@ if __name__ == '__main__':
             print(design_results[key])
 
         # Save results.
-        out_path = os.path.join('experiments','results','prior','prior_design_results.csv')
+        out_path = os.path.join(results_dir,'prior','prior_design_results.csv')
         data_handling.save_design_results(design_results, out_path)

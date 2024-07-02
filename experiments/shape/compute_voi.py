@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import numpy as np
@@ -12,7 +12,7 @@ from utils import data_handling
 
 if __name__ == '__main__':
 
-    results_dir = os.path.join('experiments','results')
+    from experiments.shape.expt_config import *
 
     # Load prior eval results.
     # ========================
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     print('')
     for info_type in ['type']: # 'profile'
         print(f'\nInfo type: {info_type}')
-        posterior_results_dir = os.path.join('experiments','results',f'posterior_{info_type}_info')
+        posterior_results_dir = os.path.join(results_dir,f'posterior_{info_type}_info')
         posterior_design_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'designs')) if file.endswith(".csv")]
         post_design_results = [data_handling.load_design_results(os.path.join(posterior_results_dir, 'designs', file)) for file in posterior_design_results_files]
         posterior_mean_grid_cap = np.mean([res['grid_con_capacity'] for res in post_design_results])

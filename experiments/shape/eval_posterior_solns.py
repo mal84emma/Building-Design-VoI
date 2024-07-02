@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 # run using `python -m experiments.{fname}`
 
 import time
@@ -108,19 +108,19 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
-        from experiments.expt_config import *
+        from experiments.shape.expt_config import *
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join('experiments','results','sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
         scenarios = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
         # Load posterior optimal system designs.
-        designs_path_pattern = os.path.join('experiments','results',f'posterior_solar_constr_{info_type}_info','designs','s{j}_posterior_design_results.csv')
+        designs_path_pattern = os.path.join(results_dir,f'posterior_solar_constr_{info_type}_info','designs','s{j}_posterior_design_results.csv')
         scenario_tuples = [(j,scenario) for j,scenario in enumerate(scenarios)][:100] ##temp
 
         # Set up output directory.
-        out_dir = os.path.join('experiments','results',f'posterior_solar_constr_{info_type}_info','evals')
+        out_dir = os.path.join(results_dir,f'posterior_solar_constr_{info_type}_info','evals')
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
