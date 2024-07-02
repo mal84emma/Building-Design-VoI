@@ -4,6 +4,8 @@ Note:
 - all results are logged to files in the `results` directory.
 - `expt_config.py` contains configuration parameters used by all experiments.
 
+# ToDo: Update with new experiment dir structure!!!
+
 ## Experiment Scripts
 - `generate_scenarios.py`, sample scenarios from prior distribution which are used by all other calculations requiring prior samples.
 - `find_prior_soln.py` - solve Stochastic Program to determine prior optimal solution.

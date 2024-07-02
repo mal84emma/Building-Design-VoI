@@ -13,7 +13,8 @@ from utils import data_handling
 if __name__ == '__main__':
 
     from experiments.expt_config import *
-    from experiments.shape.shape_expts_config import *
+
+    results_dir = os.path.join('experiments','shape','results')
 
     cases = ['prior','constr_solar','battery_only','solar_only','neither']
     results = {}
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     # Load eval results for each system case.
     # =======================================
     for case in cases:
-        eval_results_path = os.path.join(results_dir,'prior',case+'_eval_results.csv')
+        eval_results_path = os.path.join(results_dir,'prior',f'{case}_eval_results.csv')
         eval_results = data_handling.load_eval_results(eval_results_path)
         costs = [res['objective'] for res in eval_results]
         case_results = {
