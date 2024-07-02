@@ -52,7 +52,7 @@ def level_prior_model(n_buildings,n_samples,building_ids,years):
         years (list[int]): List of valid years to sample from.
 
     Returns:
-        np.array: Array of scenarios (Nx2 arrays of building-year tuples).
+        np.array: Array of scenarios (Nx4 arrays of building-year-mean-peak tuples).
     """
 
     bs = np.random.choice(building_ids, (n_samples,n_buildings))
@@ -62,23 +62,41 @@ def level_prior_model(n_buildings,n_samples,building_ids,years):
 
     return np.array([list(zip(bs[i],ys[i],mus[i],ps[i])) for i in range(n_samples)])
 
-def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,years,info='both'):
-    """ToDo"""
+def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,years,info='mean+peak'):
+    """Sample scenarios of (building-year) & (mean-peak) pairs from posterior distribution.
+    i.e. with given (sampled) set of building ids, and mean & peak loads.
+    Scenarios are Nx4 arrays of building-year-mean-peak tuples for each of the N buildings in the system.
+    Posterior assumed perfect information provided by sample for building ids, and
+    mean and/or peak load.
+
+    Args:
+        sampled_ids (list[int]): List of sampled building ids (used for all
+            posterior scenarios).
+        sampled_mus (list[float]): List of sampled mean loads (kW).
+        sampled_peaks (list[float]): List of sampled peak loads (kW).
+        n_samples (int): Number of scenarios to samples from prior.
+        years (list[int]): List of valid years to sample from.
+        info (str, optional): Type of information provided to posterior by
+            sample. One of ['mean', 'peak', 'mean+peak']. Defaults to 'mean+peak'.
+
+    Returns:
+        np.array: Array of scenarios (Nx4 arrays of building-year-mean-peak tuples).
+    """
 
     n_buildings = len(sampled_ids)
 
     ys = np.random.choice(years, (n_samples,n_buildings))
 
-    if info in ['mu','both']:
+    if info in ['mean','mean+peak']:
         mus = np.round(np.tile(sampled_mus,(n_samples,n_buildings)),1)
     else:
         mus = np.round(np.random.uniform(50, 150, (n_samples,n_buildings)),1) # ToDo - confirm model
-    
-    if info in ['peak','both']:
+
+    if info in ['peak','mean+peak']:
         ps = np.round(np.tile(sampled_peaks,(n_samples,n_buildings)),1)
     else:
         ps = np.round(np.random.uniform(250, 500, (n_samples,n_buildings)),1) # ToDo - confirm model
-    
+
     return np.array([list(zip(sampled_ids,ys[i],mus[i],ps[i])) for i in range(n_samples)])
 
 

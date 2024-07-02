@@ -26,7 +26,8 @@ import warnings
 from tqdm import tqdm
 from functools import partial
 from load_scenario_reduction import reduce_load_scenarios
-from utils import build_schema, get_Gurobi_WLS_env
+from utils import data_handling
+from utils import generate_temp_building_files, build_schema, get_Gurobi_WLS_env
 from utils.plotting import init_profile_fig, add_profile
 from linmodel import LinProgModel
 from citylearn.citylearn import CityLearnEnv
@@ -51,9 +52,9 @@ def design_system(
     given set of scenarios.
 
     Args:
-        sampled_scenarios (List): List of Nx2 vectors defining scenarios. I.e.
-            iterable of vectors containing (building_id, year) tuples for each
-            building in each scenario.
+        sampled_scenarios (List): List of Nx2/4 vectors defining scenarios. I.e.
+            iterable of vectors containing (building_id, year / mean, peak) tuples
+            for each building in each scenario.
         data_dir (str or Path): Path to directory containing Citylearn compatible
             data.
         building_file_pattern (fstr): Pattern of building load data files. Must
@@ -83,10 +84,10 @@ def design_system(
     ## Get load profiles for all scenarios (reduces load time)
     # ========================================================
     if show_progress: print("Loading data...")
-    building_year_pairs = np.unique(np.concatenate(sampled_scenarios,axis=0),axis=0)
+    building_year_pairs = np.unique(np.concatenate(sampled_scenarios,axis=0)[:,:2],axis=0)
     load_profiles = {
-        f'{building_id}-{year}': pd.read_csv(
-            os.path.join(data_dir, building_file_pattern.format(id=building_id, year=year)),
+        f'{int(building_id)}-{int(year)}': pd.read_csv(
+            os.path.join(data_dir, building_file_pattern.format(id=int(building_id), year=int(year))),
             usecols=['Equipment Electric Power [kWh]']
             )['Equipment Electric Power [kWh]'].to_numpy()\
                 for (building_id, year) in building_year_pairs
@@ -112,10 +113,15 @@ def design_system(
     # load data for each scenario and build schemas
     envs = []
     schema_paths = []
-    for m, lys in enumerate(reduced_scenarios):
+    for m, scenario in enumerate(reduced_scenarios):
+
+        # Get building files, generating temporary files if required (i.e. if scaling needed)
+        load_files = generate_temp_building_files(scenario, data_dir, building_file_pattern, m, process_id=process_id)
+
+        # Build schema
         params = base_params.copy()
-        params['building_names'] = [f'TB{i}' for i in range(len(lys))]
-        params['load_data_paths'] = [building_file_pattern.format(id=b,year=y) for b,y in lys]
+        params['building_names'] = [f'TB{i}' for i in range(len(scenario))]
+        params['load_data_paths'] = load_files
         params['battery_efficiencies'] = [params['base_battery_efficiency']]*len(params['building_names'])
         params.pop('base_battery_efficiency', None)
         params['schema_name'] = f'SP_schema_s{m}'
@@ -156,11 +162,14 @@ def design_system(
     results['reduced_scenarios'] = reduced_scenarios
     results['reduced_probs'] = reduced_probs
 
-    ## Clean up schemas
-    # =================
+    ## Clean up schemas & temporary load profile files
+    # ================================================
     for path in schema_paths:
         if os.path.normpath(path).split(os.path.sep)[-1] != 'schema.json':
             os.remove(path)
+    for load_file in load_files:
+        if 'temp' in load_file:
+            os.remove(os.path.join(data_dir,load_file))
     if show_progress: print("Design complete.")
 
     return results
@@ -385,10 +394,15 @@ def evaluate_multi_system_scenarios(
 
     # Build schema for each scenario
     scenario_schema_paths = []
-    for m, lys in enumerate(sampled_scenarios):
+    for m, scenario in enumerate(sampled_scenarios):
+
+        # Get building files, generating temporary files if required (i.e. if scaling needed)
+        load_files = generate_temp_building_files(scenario, data_dir, building_file_pattern, m)
+
+        # Build schema
         params = base_params.copy()
-        params['building_names'] = [f'TB{i}' for i in range(len(lys))]
-        params['load_data_paths'] = [building_file_pattern.format(id=b,year=y) for b,y in lys]
+        params['building_names'] = [f'TB{i}' for i in range(len(scenario))]
+        params['load_data_paths'] = load_files
         params['schema_name'] = f'EVAL_schema_s{m}'
         schema_path = build_schema(**params)
         scenario_schema_paths.append(schema_path)
@@ -422,6 +436,9 @@ def evaluate_multi_system_scenarios(
     for path in scenario_schema_paths:
         if os.path.normpath(path).split(os.path.sep)[-1] != 'schema.json':
             os.remove(path)
+    for load_file in load_files:
+        if 'temp' in load_file:
+            os.remove(os.path.join(data_dir,load_file))
     if show_progress: print("Evaluation complete.")
 
     return np.mean([res['objective'] for res in eval_results]), eval_results
@@ -429,6 +446,8 @@ def evaluate_multi_system_scenarios(
 
 if __name__ == '__main__':
     # give each of the fns a test run
+
+    from prob_models import shape_prior_model, level_prior_model
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
@@ -449,6 +468,8 @@ if __name__ == '__main__':
         years = list(range(2012, 2018))
         ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
         n_buildings = 3
+        n_reduced_scenarios = 5
+        n_sims = 5
 
         cost_dict = {
             'carbon': 1.0, # $/kgCO2
@@ -464,33 +485,35 @@ if __name__ == '__main__':
 
         np.random.seed(0)
         n_samples = 1000
-        scenarios = np.array([list(zip(np.random.choice(ids, n_buildings),np.random.choice(years, n_buildings))) for _ in range(n_samples)])
+        scenarios = level_prior_model(n_buildings, n_samples, ids, years)
 
         # test system design
         design_results = design_system(scenarios, dataset_dir, building_fname_pattern, cost_dict,
-                                        solver_kwargs=solver_kwargs, num_reduced_scenarios=5,
+                                        solver_kwargs=solver_kwargs, num_reduced_scenarios=n_reduced_scenarios,
                                         show_progress=True
                                     )
 
         for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
             print(design_results[key])
 
-        system_design = {
-            'battery_capacities': design_results['battery_capacities'],
-            'solar_capacities': design_results['solar_capacities'],
-            'grid_con_capacity': design_results['grid_con_capacity']
-        }
+        out_path = 'temp_design_results.csv'
+        data_handling.save_design_results(design_results, out_path)
+
+        system_design = data_handling.load_design_results('temp_design_results.csv')
 
         solver_kwargs = {} # HiGHS better for operational LP
         # test system evaluation
         mean_cost, eval_results = evaluate_multi_system_scenarios(
-                scenarios[:20], system_design, dataset_dir, building_fname_pattern,
+                scenarios[:n_sims], system_design, dataset_dir, building_fname_pattern,
                 design=True, cost_dict=cost_dict, tau=48, n_processes=None,
-                solver_kwargs=solver_kwargs, show_progress=True, plot=False
+                solver_kwargs=solver_kwargs, show_progress=True, plot=True
             )
 
         print('Mean system cost:', mean_cost)
         print('Mean system cost components:', np.mean([res['objective_contrs'] for res in eval_results],axis=0))
+
+        out_path = 'temp_eval_results.csv'
+        data_handling.save_eval_results(eval_results, system_design, scenarios, out_path)
 
         # compare objective fn returned by LP to actual cost from simulation (LP over-optimism)
         print('LP objective:', design_results['objective'])

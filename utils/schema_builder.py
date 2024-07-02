@@ -6,6 +6,61 @@ import json
 from pathlib import Path
 from typing import List, Union
 
+import pandas as pd
+from utils.data_processing import scale_profile
+
+
+def generate_temp_building_files(
+        scenario_vector,
+        data_dir_path: Union[str, Path],
+        building_file_pattern: str,
+        scenario_no: int,
+        process_id: int = None
+    ):
+    """Generate temporary building files for a scenario if required
+    (i.e. if profile scaling is needed).
+
+    Args:
+        scenario_vector (List): Nx2/4 vector defining scenarios. I.e. vector
+            vector containing (building_id, year / mean, peak) tuples for each
+            building in each scenario.
+        data_dir_path (str or Path): Path to directory containing Citylearn compatible
+            data.
+        building_file_pattern (fstr): Pattern of building load data files. Must
+            contain {id} and {year} placeholders.
+        scenario_no (int): Scenario number of file identification
+        process_id (int, optional): Process id for file identification. Defaults to None.
+    
+    Returns:
+        List: List of paths to (temporary) building files for each building in scenario.
+            Used to construct schema and for file cleanup.
+    """
+
+    if scenario_vector.shape[1] == 2: # no file generation needed
+        load_files = [building_file_pattern.format(id=int(b),year=int(y)) for b,y in scenario_vector]
+
+    elif scenario_vector.shape[1] == 4: # generate temporary files
+        load_files = []
+
+        for i,b_tup in enumerate(scenario_vector):
+            building_id, year, mean, peak = b_tup
+
+            temp_file = f'temp-prof_SB{i}_s{scenario_no}.csv'
+            if process_id is not None:
+                temp_file = f'p{process_id}_' + temp_file
+            load_files.append(temp_file) # generate temp file name
+
+            # grab original data, scale, and save to temp file
+            original_building_file = pd.read_csv(os.path.join(data_dir_path, building_file_pattern.format(id=int(building_id), year=int(year))))
+            profile = original_building_file['Equipment Electric Power [kWh]'].to_numpy()
+            scaled_profile = scale_profile(profile, mean, peak)
+
+            new_building_file = original_building_file.copy()
+            new_building_file['Equipment Electric Power [kWh]'] = scaled_profile
+            new_building_file.to_csv(os.path.join(data_dir_path,temp_file), index=False)
+
+    return load_files
+
 
 def build_schema(
         data_dir_path: Union[str, Path],
