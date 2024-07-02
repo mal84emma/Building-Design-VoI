@@ -29,9 +29,9 @@ def load_scenarios(in_path):
         header = next(reader)
         scenarios = []
         for row in reader:
-            scenarios.append([format_scenario_tuple(ast.literal_eval(t)) for t in row[1:]])
+            scenarios.append([ast.literal_eval(t) for t in row[1:]])
 
-    return scenarios
+    return np.array(scenarios)
 
 def save_design_results(results, out_path):
     """Save LP design results & used scenarios to CSV."""
@@ -87,7 +87,7 @@ def load_design_results(in_path):
     results['objective_contrs'] = np.array([float(t) for t in [row[1] for row in rows[8:14]]])
 
     # Load reduced scenarios.
-    results['reduced_scenarios'] = np.array([[format_scenario_tuple(ast.literal_eval(t)) for t in row[2:]] for row in rows[16:]])
+    results['reduced_scenarios'] = np.array([[ast.literal_eval(t) for t in row[2:]] for row in rows[16:]])
     results['reduced_probs'] = np.array([float(row[1]) for row in rows[16:]])
 
     return results

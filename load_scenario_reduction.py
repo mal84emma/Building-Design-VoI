@@ -2,6 +2,7 @@
 
 import numpy as np
 from scenarioReducer import Fast_forward
+from utils.data_processing import scale_profile
 
 
 def rescale_array(a, invert=False, bounds=None):
@@ -10,11 +11,27 @@ def rescale_array(a, invert=False, bounds=None):
     new_bounds = (0, 1) if not invert else bounds
     return np.interp(a, old_bounds, new_bounds)
 
-def get_scenario_stats(building_year_vector, load_profiles_dict):
-    """Compute standard deviation and peak of aggregate load for a given scenario,
+def get_scenario_stats(building_scenario_vector, load_profiles_dict):
+    """Compute mean, standard deviation, and peak of aggregate load for a given scenario,
     i.e. set of building-year profiles (profiles for each building in scenario)."""
 
-    aggregate_load = np.sum([load_profiles_dict[f'{building_id}-{year}'] for building_id, year in building_year_vector], axis=0)
+    load_profiles = []
+
+    for building_tuple in building_scenario_vector:
+        if len(building_tuple) == 2:
+            building_id,year = building_tuple
+        if len(building_tuple) == 4:
+            building_id,year = building_tuple[:2]
+            mean,peak = building_tuple[2:]
+
+        load_profile = load_profiles_dict[f'{int(building_id)}-{int(year)}']
+
+        if len(building_tuple) == 4: # if mean and peak provide, perform profile scaling
+            load_profile = scale_profile(load_profile, mean, peak)
+
+        load_profiles.append(load_profile)
+
+    aggregate_load = np.sum(load_profiles, axis=0)
 
     return np.mean(aggregate_load), np.std(aggregate_load), np.max(aggregate_load)
 

@@ -55,10 +55,10 @@ def level_prior_model(n_buildings,n_samples,building_ids,years):
         np.array: Array of scenarios (Nx2 arrays of building-year tuples).
     """
 
-    bs = np.random.choice(building_ids, (n_buildings,n_samples))
-    ys = np.random.choice(years, (n_buildings,n_samples))
-    mus = np.round(np.random.uniform(50, 150, (n_buildings,n_samples)),1) # ToDo - confirm model
-    ps = np.round(np.random.uniform(250, 500, (n_buildings,n_samples)),1) # ToDo - confirm model
+    bs = np.random.choice(building_ids, (n_samples,n_buildings))
+    ys = np.random.choice(years, (n_samples,n_buildings))
+    mus = np.round(np.random.uniform(50, 150, (n_samples,n_buildings)),1) # ToDo - confirm model
+    ps = np.round(np.random.uniform(250, 500, (n_samples,n_buildings)),1) # ToDo - confirm model
 
     return np.array([list(zip(bs[i],ys[i],mus[i],ps[i])) for i in range(n_samples)])
 
@@ -67,17 +67,17 @@ def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,years,
 
     n_buildings = len(sampled_ids)
 
-    ys = np.random.choice(years, (n_buildings,n_samples))
+    ys = np.random.choice(years, (n_samples,n_buildings))
 
     if info in ['mu','both']:
-        mus = np.round(np.tile(sampled_mus,(n_buildings,n_samples)),1)
+        mus = np.round(np.tile(sampled_mus,(n_samples,n_buildings)),1)
     else:
-        mus = np.round(np.random.uniform(50, 150, (n_buildings,n_samples)),1) # ToDo - confirm model
+        mus = np.round(np.random.uniform(50, 150, (n_samples,n_buildings)),1) # ToDo - confirm model
     
     if info in ['peak','both']:
-        ps = np.round(np.tile(sampled_peaks,(n_buildings,n_samples)),1)
+        ps = np.round(np.tile(sampled_peaks,(n_samples,n_buildings)),1)
     else:
-        ps = np.round(np.random.uniform(250, 500, (n_buildings,n_samples)),1) # ToDo - confirm model
+        ps = np.round(np.random.uniform(250, 500, (n_samples,n_buildings)),1) # ToDo - confirm model
     
     return np.array([list(zip(sampled_ids,ys[i],mus[i],ps[i])) for i in range(n_samples)])
 
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # give it a spin
 
     n_buildings = 4
-    n_samples = 3
+    n_samples = 10
     years = list(range(2012, 2018))
     ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118]
 
