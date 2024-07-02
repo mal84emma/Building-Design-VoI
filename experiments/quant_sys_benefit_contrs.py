@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     results_dir = os.path.join('experiments','shape','results')
 
-    cases = ['prior','constr_solar','battery_only','solar_only','neither']
+    cases = ['unconstr','constr_solar','battery_only','solar_only','neither']
     results = {}
 
     # Load eval results for each system case.

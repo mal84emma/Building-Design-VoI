@@ -19,13 +19,27 @@ from prob_models import shape_posterior_model
 
 if __name__ == '__main__':
 
+    # Get run option
+    run_option = int(sys.argv[1])
+
+    scenarios_to_do = 160
+    offset = 0
+
+    if run_option == 0:
+        expt_name = 'unconstr'
+        sizing_constraints = {'battery':None,'solar':None}
+    elif run_option == 1:
+        expt_name = 'solar_constr'
+        sizing_constraints = {'battery':None,'solar':150.0}
+    else:
+        raise ValueError('Invalid run option. Please provide valid CLI argument.')
+
+
     np.random.seed(0)
 
     info_type = 'type'
     n_concurrent_designs = 8
     # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
-
-    sizing_constraints = {'battery':None,'solar':150.0}
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
@@ -35,6 +49,8 @@ if __name__ == '__main__':
         from experiments.expt_config import *
         from experiments.shape.shape_expts_config import *
         n_post_samples = 1000 # adjust for design
+
+        post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info')
 
         try:
             m = gp.Model()
@@ -49,7 +65,7 @@ if __name__ == '__main__':
         n_buildings = scenarios.shape[1]
 
         # Set up output directory.
-        out_dir = os.path.join(results_dir,f'posterior_constr_solar_{info_type}_info','designs')
+        out_dir = os.path.join(post_results_dir,'designs')
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
@@ -70,8 +86,9 @@ if __name__ == '__main__':
         )
 
         # Compute posterior optimal system designs.
+        scenarios_to_design = list(enumerate(scenarios))[offset:offset+scenarios_to_do]
         if n_concurrent_designs > 1:
             with mp.Pool(n_concurrent_designs) as pool:
-                design_results = list(tqdm(pool.imap(design_wrapper, list(enumerate(scenarios))), total=len(scenarios)))
+                design_results = list(tqdm(pool.imap(design_wrapper, scenarios_to_design), total=len(scenarios_to_design)))
         else:
-            design_results = [design_wrapper(t) for t in tqdm(zip([None]*len(scenarios),scenarios))]
+            design_results = [design_wrapper(t) for t in tqdm([(None,s) for s in scenarios_to_design])]

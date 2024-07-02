@@ -15,12 +15,11 @@ if __name__ == '__main__':
     from experiments.expt_config import *
 
     results_dir = os.path.join('experiments','shape','results')
-    expt_name_prior = 'constr_solar'
-    expt_name_post = '_constr_solar'
+    expt_name = 'constr_solar'
 
     # Load prior eval results.
     # ========================
-    prior_eval_results_path = os.path.join(results_dir,'prior','{expt_name}_eval_results.csv')
+    prior_eval_results_path = os.path.join(results_dir,'prior',f'{expt_name}_eval_results.csv')
     prior_eval_results = data_handling.load_eval_results(prior_eval_results_path)
     prior_costs = [res['objective'] for res in prior_eval_results]
     prior_MC_estimates = [np.mean(prior_costs[:i+1]) for i in range(len(prior_costs))]
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     # ============================
     post_MC_estimates = {}
     for info_type in ['type']: # 'profile'
-        posterior_eval_results_dir = os.path.join(results_dir,f'posterior{expt_name_post}_{info_type}_info','evals')
+        posterior_eval_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info','evals')
         posterior_eval_results_files = [file for file in os.listdir(posterior_eval_results_dir) if file.endswith(".csv")]
         post_eval_results = [data_handling.load_eval_results(os.path.join(posterior_eval_results_dir, file)) for file in posterior_eval_results_files]
         post_mean_costs = [np.mean([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]

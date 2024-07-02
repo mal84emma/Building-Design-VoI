@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     options_dicts = [
         {
-            'case_name': 'prior',
+            'case_name': 'unconstr',
             'sizing_constraints': {'battery':None,'solar':None},
             'use_battery': True
         },
