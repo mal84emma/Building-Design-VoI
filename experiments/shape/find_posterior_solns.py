@@ -111,7 +111,8 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
-        from experiments.shape.expt_config import *
+        from experiments.expt_config import *
+        from experiments.shape.shape_expts_config import *
         n_post_samples = 1000 # adjust for design
 
         try:

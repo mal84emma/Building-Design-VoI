@@ -12,7 +12,8 @@ from utils import data_handling
 
 if __name__ == '__main__':
 
-    from experiments.shape.expt_config import *
+    from experiments.expt_config import *
+    from experiments.shape.shape_expts_config import *
 
     cases = ['prior','constr_solar','battery_only','solar_only','neither']
     results = {}

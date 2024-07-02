@@ -46,7 +46,8 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
-        from experiments.shape.expt_config import *
+        from experiments.expt_config import *
+        from experiments.shape.shape_expts_config import *
 
         # Load prior scenario samples.
         scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
