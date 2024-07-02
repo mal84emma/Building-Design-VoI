@@ -2,7 +2,7 @@
 
 import numpy as np
 from scenarioReducer import Fast_forward
-from utils.data_processing import scale_profile
+from utils import scale_profile
 
 
 def rescale_array(a, invert=False, bounds=None):

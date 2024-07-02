@@ -13,87 +13,8 @@ import numpy as np
 import gurobipy as gp
 import multiprocess as mp
 from functools import partial
-from utils import get_Gurobi_WLS_env, data_handling
+from utils import data_handling, posterior_design
 from prob_models import shape_posterior_model
-from energy_system import design_system
-
-
-def posterior_design(
-        scenario_id_tuple,
-        out_dir,
-        years,
-        n_post_samples,
-        info_type,
-        data_dir,
-        building_file_pattern,
-        cost_dict,
-        sizing_constraints={},
-        solver_kwargs={},
-        num_reduced_scenarios=None,
-        show_progress=False
-    ):
-    """Wrapper function for designing system based on posterior samples.
-
-    Args:
-        scenario_id_tuple (tuple): Tuple containing scenario number (index of
-            samples from prior) and scenario vector for sampled scenario.
-            Single argument to unpack for ease of multiprocessing.
-        out_dir (path): Directory to save design results to.
-        years (list): List of valid years for posterior distr/sampling.
-        n_post_samples (int): No. of samples to draw from posterior.
-        info_type (str): 'type' or 'profile'. Type of information provided by
-            sampled scenario, determining posterior dist. to use.
-        NOTE: all args below are passed to `design_system` function. See docstring
-            for details.
-        data_dir (path):
-        building_file_pattern (str):
-        cost_dict (dict):
-        sizing_constraints (dict, optional): Defaults to {}.
-        solver_kwargs (dict, optional): Defaults to {}.
-        num_reduced_scenarios (int, optional): Defaults to None.
-        show_progress (bool, optional): Defaults to False.
-
-    Returns:
-        dict: Not used.
-    """
-
-    scenario_num,measured_scenario = scenario_id_tuple
-
-    # Set up solver environment.
-    if solver_kwargs['solver'] == 'GUROBI':
-        solver_kwargs['env'] = get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
-
-    # Sample scenarios from posterior based on info type.
-    if info_type == 'profile':
-        sampled_scenarios = [measured_scenario]
-        num_reduced_scenarios = None
-    elif info_type == 'type':
-        sampled_scenarios = shape_posterior_model(measured_scenario[:,0], n_post_samples, years)
-
-    # Design system.
-    start = time.time()
-    design_results = design_system(
-            sampled_scenarios,
-            data_dir,
-            building_file_pattern,
-            cost_dict,
-            sizing_constraints=sizing_constraints,
-            solver_kwargs=solver_kwargs,
-            num_reduced_scenarios=num_reduced_scenarios,
-            show_progress=show_progress if scenario_num != None else False,
-            process_id=scenario_num
-        )
-    end = time.time()
-
-    # Save results.
-    out_path = os.path.join(out_dir,f's{scenario_num}_posterior_design_results.csv')
-    data_handling.save_design_results(design_results, out_path)
-
-    # Report finish.
-    print(f'Scenario {scenario_num} design completed in {end-start:.2f}s @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
-
-    return design_results
-
 
 
 if __name__ == '__main__':
@@ -137,8 +58,9 @@ if __name__ == '__main__':
             posterior_design,
             out_dir=out_dir,
             years=years,
-            n_post_samples=n_post_samples,
+            posterior_model=shape_posterior_model,
             info_type=info_type,
+            n_post_samples=n_post_samples,
             data_dir=dataset_dir,
             building_file_pattern=building_fname_pattern,
             cost_dict=cost_dict,

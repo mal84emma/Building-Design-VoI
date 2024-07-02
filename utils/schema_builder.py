@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Union
 
 import pandas as pd
-from utils.data_processing import scale_profile
+from utils import scale_profile
 
 
 def generate_temp_building_files(
