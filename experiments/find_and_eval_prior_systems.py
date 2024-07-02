@@ -57,6 +57,9 @@ if __name__ == '__main__':
 
     n_processes = mp.cpu_count()
 
+    if not os.path.exists(os.path.join(results_dir,'prior')):
+        os.makedirs(os.path.join(results_dir,'prior'))
+
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)

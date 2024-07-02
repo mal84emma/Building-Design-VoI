@@ -65,12 +65,14 @@ if __name__ == '__main__':
     n_concurrent_designs = 8
     # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
 
+    post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info')
+    if not os.path.exists(os.path.join(post_results_dir,'designs')):
+        os.makedirs(os.path.join(post_results_dir,'designs'))
+
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
-
-        post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info')
 
         try:
             m = gp.Model()
