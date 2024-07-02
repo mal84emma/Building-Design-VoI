@@ -16,7 +16,7 @@ def get_scenario_stats(building_year_vector, load_profiles_dict):
 
     aggregate_load = np.sum([load_profiles_dict[f'{building_id}-{year}'] for building_id, year in building_year_vector], axis=0)
 
-    return np.std(aggregate_load), np.max(aggregate_load)
+    return np.mean(aggregate_load), np.std(aggregate_load), np.max(aggregate_load)
 
 def reduce_load_scenarios(sampled_scenarios, load_profiles_dict, num_scenarios=10):
     """Determine reduced set of scenarios based on stats of aggregate load profiles.
@@ -25,10 +25,10 @@ def reduce_load_scenarios(sampled_scenarios, load_profiles_dict, num_scenarios=1
 
     # compute stats of aggregate load profiles for each scenario
     scenario_stats = np.array([get_scenario_stats(scenario, load_profiles_dict) for scenario in sampled_scenarios])
-    bounds = [(np.min(scenario_stats[:,0]), np.max(scenario_stats[:,0])),(np.min(scenario_stats[:,1]), np.max(scenario_stats[:,1]))]
+    bounds = [(np.min(scenario_stats[:,j]), np.max(scenario_stats[:,j])) for j in range(3)]
 
     # rescale stats to [0,1] (independently on each axis) for clustering
-    scaled_scenario_stats = np.array([rescale_array(scenario_stats[:,0]), rescale_array(scenario_stats[:,1])]).T
+    scaled_scenario_stats = np.array([rescale_array(scenario_stats[:,j]) for j in range(3)]).T
 
     # set up scenario reducer object - assume all scenarios have equal probability
     probs = np.ones(shape=sampled_scenarios.shape[0])/sampled_scenarios.shape[0]
