@@ -15,7 +15,16 @@ from energy_system import design_system, evaluate_multi_system_scenarios
 
 if __name__ == '__main__':
 
-    n_processes = mp.cpu_count()
+    # Get run options
+    expt_type = str(sys.argv[1])
+
+    from experiments.configs.general_config import *
+    if expt_type == 'shape':
+        from experiments.configs.shape_expts_config import *
+    elif expt_type == 'level':
+        from experiments.configs.level_expts_config import *
+    else:
+        raise ValueError('Invalid run option for `expt_type`. Please provide valid CLI argument.')
 
     options_dicts = [
         {
@@ -46,13 +55,12 @@ if __name__ == '__main__':
     ]
 
 
+    n_processes = mp.cpu_count()
+
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
-
-        from experiments.expt_config import *
-        from experiments.shape.shape_expts_config import *
 
         # Load prior scenario samples.
         scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')

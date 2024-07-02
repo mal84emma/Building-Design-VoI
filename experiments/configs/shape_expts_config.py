@@ -2,5 +2,5 @@
 
 import os
 
-results_dir = os.path.join('experiments','shape','results')
+results_dir = os.path.join('experiments','results','shape')
 n_buildings = 10

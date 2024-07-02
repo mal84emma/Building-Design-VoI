@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Union
 
 import pandas as pd
-from utils import scale_profile
+import utils.data_processing as dp
 
 
 def generate_temp_building_files(
@@ -53,7 +53,7 @@ def generate_temp_building_files(
             # grab original data, scale, and save to temp file
             original_building_file = pd.read_csv(os.path.join(data_dir_path, building_file_pattern.format(id=int(building_id), year=int(year))))
             profile = original_building_file['Equipment Electric Power [kWh]'].to_numpy()
-            scaled_profile = scale_profile(profile, mean, peak)
+            scaled_profile = dp.scale_profile(profile, mean, peak)
 
             new_building_file = original_building_file.copy()
             new_building_file['Equipment Electric Power [kWh]'] = scaled_profile

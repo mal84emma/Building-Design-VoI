@@ -3,7 +3,7 @@
 # Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
 # run using `python -m experiments.{fname}`
 
 import numpy as np
@@ -12,7 +12,7 @@ from utils import data_handling
 
 if __name__ == '__main__':
 
-    from experiments.expt_config import *
+    from experiments.configs.general_config import *
 
     results_dir = os.path.join('experiments','shape','results')
 

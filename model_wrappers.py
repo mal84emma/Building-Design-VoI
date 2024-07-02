@@ -2,7 +2,8 @@
 
 import os
 import time
-from utils import data_handling, get_Gurobi_WLS_env
+import utils
+import utils.data_handling as data_handling
 from energy_system import design_system, evaluate_multi_system_scenarios
 
 
@@ -75,7 +76,7 @@ def posterior_design(
 
     # Set up solver environment.
     if solver_kwargs['solver'] == 'GUROBI':
-        solver_kwargs['env'] = get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
+        solver_kwargs['env'] = utils.get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
 
     # Sample scenarios from posterior model based on info type.
     sampled_scenarios = sample_posterior(posterior_model,measured_scenario,years,info_type,n_post_samples)

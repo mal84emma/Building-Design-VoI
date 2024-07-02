@@ -11,40 +11,60 @@ from tqdm import tqdm
 import numpy as np
 import multiprocess as mp
 from functools import partial
-from utils import data_handling, posterior_evaluation
-from prob_models import shape_posterior_model
+from utils import data_handling
+from model_wrappers import posterior_evaluation
+from prob_models import shape_posterior_model, level_posterior_model
 
 
 if __name__ == '__main__':
 
-    # Get run option
-    run_option = int(sys.argv[1])
-
+    # Run params
     scenarios_to_do = 160
     offset = 0
 
-    if run_option == 0:
+    # Get run options
+    expt_type = str(sys.argv[1])
+    expt_id = int(sys.argv[2])
+    info_id = int(sys.argv[3])
+
+    from experiments.configs.general_config import *
+    if expt_type == 'shape':
+        from experiments.configs.shape_expts_config import *
+        posterior_model = shape_posterior_model
+    elif expt_type == 'level':
+        from experiments.configs.level_expts_config import *
+        posterior_model = level_posterior_model
+    else:
+        raise ValueError('Invalid run option for `expt_type`. Please provide valid CLI argument.')
+
+    if expt_id == 0:
         expt_name = 'unconstr'
         sizing_constraints = {'battery':None,'solar':None}
-    elif run_option == 1:
+    elif expt_id == 1:
         expt_name = 'solar_constr'
         sizing_constraints = {'battery':None,'solar':150.0}
     else:
-        raise ValueError('Invalid run option. Please provide valid CLI argument.')
+        raise ValueError('Invalid run option for `expt_id`. Please provide valid CLI argument.')
+
+    if info_id == 0:
+        info_type = 'type'
+    elif info_id == 1:
+        info_type = 'mean'
+    elif info_id == 2:
+        info_type = 'peak'
+    elif info_id == 3:
+        info_type = 'mean+peak'
+    else:
+        raise ValueError('Invalid run option for `info_id`. Please provide valid CLI argument.')
 
 
     np.random.seed(0)
-
-    info_type = 'type'
     n_processes = mp.cpu_count()
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
-
-        from experiments.expt_config import *
-        from experiments.shape.shape_expts_config import *
 
         post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info')
 
@@ -68,7 +88,7 @@ if __name__ == '__main__':
             design_results_path_pattern=designs_path_pattern,
             out_dir=out_dir,
             years=years,
-            posterior_model=shape_posterior_model,
+            posterior_model=posterior_model,
             info_type=info_type,
             n_post_samples=n_post_samples,
             data_dir=dataset_dir,
