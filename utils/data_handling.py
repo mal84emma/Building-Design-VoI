@@ -4,6 +4,11 @@ import csv
 import ast
 import numpy as np
 
+
+def format_scenario_tuple(building_tuple):
+    """Format first two arugments of building scenario tuples to be integers."""
+    return tuple([int(t) if i < 2 else t for i,t in enumerate(building_tuple)])
+
 def save_scenarios(scenarios, out_path):
     """Save sampled scenarios to CSV."""
 
@@ -14,7 +19,7 @@ def save_scenarios(scenarios, out_path):
         writer = csv.writer(csvfile)
         writer.writerow(header)
         for scenario_no, scenario in enumerate(scenarios):
-            writer.writerow([scenario_no] + [(b,y) for b,y in scenario])
+            writer.writerow([scenario_no] + [format_scenario_tuple(tuple(bs)) for bs in scenario])
 
 def load_scenarios(in_path):
     """Load sampled scenarios from CSV."""
@@ -24,9 +29,9 @@ def load_scenarios(in_path):
         header = next(reader)
         scenarios = []
         for row in reader:
-            scenarios.append([ast.literal_eval(t) for t in row[1:]])
+            scenarios.append([format_scenario_tuple(ast.literal_eval(t)) for t in row[1:]])
 
-    return np.array(scenarios)
+    return scenarios
 
 def save_design_results(results, out_path):
     """Save LP design results & used scenarios to CSV."""
@@ -62,7 +67,7 @@ def save_design_results(results, out_path):
         writer.writerow(['Reduced Scenarios'])
         writer.writerow(scenarios_header)
         for scenario_no, (scenario,prob) in enumerate(zip(results['reduced_scenarios'],results['reduced_probs'])):
-            writer.writerow([scenario_no] + [prob] + [(b,y) for b,y in scenario])
+            writer.writerow([scenario_no] + [prob] + [format_scenario_tuple(tuple(bs)) for bs in scenario])
 
 def load_design_results(in_path):
     """Load LP design results & used scenarios from CSV."""
@@ -82,7 +87,7 @@ def load_design_results(in_path):
     results['objective_contrs'] = np.array([float(t) for t in [row[1] for row in rows[8:14]]])
 
     # Load reduced scenarios.
-    results['reduced_scenarios'] = np.array([[ast.literal_eval(t) for t in row[2:]] for row in rows[16:]])
+    results['reduced_scenarios'] = np.array([[format_scenario_tuple(ast.literal_eval(t)) for t in row[2:]] for row in rows[16:]])
     results['reduced_probs'] = np.array([float(row[1]) for row in rows[16:]])
 
     return results
@@ -112,7 +117,7 @@ def save_eval_results(results, design, scenarios, out_path):
         writer.writerow(['Evaluations'])
         writer.writerow(evals_header)
         for i, (result,scenario) in enumerate(zip(results,scenarios)):
-            writer.writerow([i,result['objective'],*result['objective_contrs'],*[(b,y) for b,y in scenario]])
+            writer.writerow([i,result['objective'],*result['objective_contrs'],*[format_scenario_tuple(tuple(bs)) for bs in scenario]])
 
 def load_eval_results(in_path):
     """Load evaluation results for multiple scenarios from CSV."""
