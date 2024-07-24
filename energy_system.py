@@ -113,10 +113,12 @@ def design_system(
     # load data for each scenario and build schemas
     envs = []
     schema_paths = []
+    all_load_files = []
     for m, scenario in enumerate(reduced_scenarios):
 
         # Get building files, generating temporary files if required (i.e. if scaling needed)
         load_files = generate_temp_building_files(scenario, data_dir, building_file_pattern, m, process_id=process_id)
+        all_load_files.extend(load_files)
 
         # Build schema
         params = base_params.copy()
@@ -167,7 +169,7 @@ def design_system(
     for path in schema_paths:
         if os.path.normpath(path).split(os.path.sep)[-1] != 'schema.json':
             os.remove(path)
-    for load_file in load_files:
+    for load_file in all_load_files:
         if 'temp' in load_file:
             os.remove(os.path.join(data_dir,load_file))
     if show_progress: print("Design complete.")
@@ -394,10 +396,12 @@ def evaluate_multi_system_scenarios(
 
     # Build schema for each scenario
     scenario_schema_paths = []
+    all_load_files = []
     for m, scenario in enumerate(sampled_scenarios):
 
         # Get building files, generating temporary files if required (i.e. if scaling needed)
         load_files = generate_temp_building_files(scenario, data_dir, building_file_pattern, m)
+        all_load_files.extend(load_files)
 
         # Build schema
         params = base_params.copy()
@@ -436,7 +440,7 @@ def evaluate_multi_system_scenarios(
     for path in scenario_schema_paths:
         if os.path.normpath(path).split(os.path.sep)[-1] != 'schema.json':
             os.remove(path)
-    for load_file in load_files:
+    for load_file in all_load_files:
         if 'temp' in load_file:
             os.remove(os.path.join(data_dir,load_file))
     if show_progress: print("Evaluation complete.")
