@@ -95,7 +95,7 @@ if __name__ == '__main__':
         design_wrapper = partial(
             posterior_design,
             out_dir=out_dir,
-            years=years,
+            prob_config=prob_config,
             posterior_model=posterior_model,
             info_type=info_type,
             n_post_samples=n_post_samples,

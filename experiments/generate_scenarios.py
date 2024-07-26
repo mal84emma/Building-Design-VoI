@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # Perform sampling.
     np.random.seed(0)
-    scenarios = prior_model(n_buildings, n_samples, ids, years)
+    scenarios = prior_model(n_buildings, n_samples, prob_config)
 
     # Save data.
     data_handling.save_scenarios(scenarios, save_path)

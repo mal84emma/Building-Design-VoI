@@ -26,3 +26,9 @@ cost_dict = {
     'grid_con_safety_factor': 1.25, # safety factor for grid connection capacity
     'cntrl_grid_cap_margin': 0.01 # margin for grid capacity in control scheme to prevent drift
 }
+
+# Probability model parameters
+prob_config = {
+    'ids': ids,
+    'years': years
+}

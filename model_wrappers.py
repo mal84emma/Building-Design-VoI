@@ -5,12 +5,13 @@ import time
 import utils
 import utils.data_handling as data_handling
 from energy_system import design_system, evaluate_multi_system_scenarios
+from prob_models import shape_posterior_model, level_posterior_model
 
 
 def sample_posterior(
         posterior_model,
         measured_scenario,
-        years,
+        prob_config,
         info_type,
         n_post_samples
     ):
@@ -20,11 +21,14 @@ def sample_posterior(
     """
 
     if info_type == 'profile':
+        assert posterior_model == shape_posterior_model, 'Posterior model must be `shape` type for info `profile`.'
         sampled_scenarios = [measured_scenario]
     elif info_type == 'type':
-        sampled_scenarios = posterior_model(measured_scenario[:,0], n_post_samples, years)
+        assert posterior_model == shape_posterior_model, 'Posterior model must be `shape` type for info `type`.'
+        sampled_scenarios = posterior_model(measured_scenario[:,0], n_post_samples, prob_config)
     elif info_type in ['mean','peak','mean+peak']:
-        sampled_scenarios = posterior_model(measured_scenario[:,0], measured_scenario[:,2], measured_scenario[:,3], n_post_samples, years, info=info_type)
+        assert posterior_model == level_posterior_model, 'Posterior model must be `level` type for info `mean` or `peak`.'
+        sampled_scenarios = posterior_model(measured_scenario[:,0], measured_scenario[:,2], measured_scenario[:,3], n_post_samples, prob_config, info=info_type)
 
     return sampled_scenarios
 
@@ -32,7 +36,7 @@ def sample_posterior(
 def posterior_design(
         scenario_id_tuple,
         out_dir,
-        years,
+        prob_config,
         posterior_model,
         info_type,
         n_post_samples,
@@ -51,7 +55,7 @@ def posterior_design(
             samples from prior) and scenario vector for sampled scenario.
             Single argument to unpack for ease of multiprocessing.
         out_dir (path): Directory to save design results to.
-        years (list): List of valid years for posterior distr/sampling.
+        prob_config (dict): Parameters defining probability model configuration.
         posterior_model (function): Function to samples scenarios from
             posterior distribution conditioned on measured scenario.
         info_type (str): One of ['profile','type','mean','peak','mean+peak'].
@@ -79,7 +83,7 @@ def posterior_design(
         solver_kwargs['env'] = utils.get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
 
     # Sample scenarios from posterior model based on info type.
-    sampled_scenarios = sample_posterior(posterior_model,measured_scenario,years,info_type,n_post_samples)
+    sampled_scenarios = sample_posterior(posterior_model,measured_scenario,prob_config,info_type,n_post_samples)
 
     # Design system.
     start = time.time()
@@ -110,7 +114,7 @@ def posterior_evaluation(
         scenario_id_tuple,
         design_results_path_pattern,
         out_dir,
-        years,
+        prob_config,
         posterior_model,
         info_type,
         n_post_samples,
@@ -131,7 +135,7 @@ def posterior_evaluation(
         design_results_path_pattern (str): Path pattern for loading
             system design results. Formatted with scenario number.
         out_dir (path): Directory to save design results to.
-        years (list): List of valid years for posterior distr/sampling.
+        prob_config (dict): Parameters defining probability model configuration.
         posterior_model (function): Function to samples scenarios from
             posterior distribution conditioned on measured scenario.
         info_type (str): One of ['profile','type','mean','peak','mean+peak'].
@@ -158,7 +162,7 @@ def posterior_evaluation(
     system_design = data_handling.load_design_results(design_results_path_pattern.format(j=scenario_num))
 
     # Sample scenarios from posterior model based on info type.
-    sampled_scenarios = sample_posterior(posterior_model,measured_scenario,years,info_type,n_post_samples)
+    sampled_scenarios = sample_posterior(posterior_model,measured_scenario,prob_config,info_type,n_post_samples)
 
     # Evaluate system.
     if show_progress: print(f'\nStarting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
