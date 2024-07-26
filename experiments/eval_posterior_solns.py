@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
         # Load posterior optimal system designs.
         designs_path_pattern = os.path.join(post_results_dir,'designs','s{j}_posterior_design_results.csv')
-        scenario_tuples = [(j,scenario) for j,scenario in enumerate(scenarios)][offset:offset+scenarios_to_do]
+        scenario_tuples = list(enumerate(scenarios))[offset:offset+scenarios_to_do]
 
         # Set up output directory.
         out_dir = os.path.join(post_results_dir,'evals')
