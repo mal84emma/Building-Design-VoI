@@ -175,7 +175,7 @@ def posterior_evaluation(
             design=True,
             cost_dict=cost_dict,
             solver_kwargs=solver_kwargs,
-            n_processes=n_processes if info_type == 'type' else None,
+            n_processes=n_processes,
             show_progress=show_progress,
         )
     end = time.time()
