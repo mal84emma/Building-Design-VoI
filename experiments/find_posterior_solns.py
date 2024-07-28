@@ -21,7 +21,7 @@ from prob_models import shape_posterior_model, level_posterior_model
 if __name__ == '__main__':
 
     # Run params
-    scenarios_to_do = 160
+    scenarios_to_do = 320
     offset = 0
 
     # Get run options
