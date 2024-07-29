@@ -9,17 +9,21 @@ def format_scenario_tuple(building_tuple):
     """Format first two arugments of building scenario tuples to be integers."""
     return tuple([int(t) if i < 2 else t for i,t in enumerate(building_tuple)])
 
-def save_scenarios(scenarios, out_path):
+def save_scenarios(scenarios, measurements, out_path):
     """Save sampled scenarios to CSV."""
 
     header = ['Scenario no.']
     header.extend([f'SB{i}' for i in range(scenarios.shape[1])])
+    header.extend([f'BM{i}' for i in range(measurements.shape[1])])
 
     with open(out_path, 'w') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(header)
         for scenario_no, scenario in enumerate(scenarios):
-            writer.writerow([scenario_no] + [format_scenario_tuple(tuple(bs)) for bs in scenario])
+            row = [scenario_no]
+            row += [format_scenario_tuple(tuple(bs)) for bs in scenario]
+            row += [format_scenario_tuple(tuple(bm)) for bm in measurements[scenario_no]]
+            writer.writerow(row)
 
 def load_scenarios(in_path):
     """Load sampled scenarios from CSV."""
@@ -27,11 +31,15 @@ def load_scenarios(in_path):
     with open(in_path, 'r') as csvfile:
         reader = csv.reader(csvfile)
         header = next(reader)
-        scenarios = []
-        for row in reader:
-            scenarios.append([ast.literal_eval(t) for t in row[1:]])
+        n_buildings = (len(header) - 1) // 2
 
-    return np.array(scenarios)
+        scenarios = []
+        measurements = []
+        for row in reader:
+            scenarios.append([ast.literal_eval(t) for t in row[1:n_buildings+1]])
+            measurements.append([ast.literal_eval(t) for t in row[n_buildings+1:]])
+
+    return np.array(scenarios), np.array(measurements)
 
 def save_design_results(results, out_path):
     """Save LP design results & used scenarios to CSV."""

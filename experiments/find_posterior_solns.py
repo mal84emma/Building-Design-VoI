@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
         # Load prior scenario samples.
         scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
-        scenarios = data_handling.load_scenarios(scenarios_path)
+        scenarios, measurements = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
         # Set up output directory.
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         )
 
         # Compute posterior optimal system designs.
-        scenarios_to_design = list(enumerate(scenarios))[offset:offset+scenarios_to_do]
+        scenarios_to_design = list(enumerate(measurements))[offset:offset+scenarios_to_do]
         if n_concurrent_designs > 1:
             with mp.Pool(n_concurrent_designs) as pool:
                 design_results = list(tqdm(pool.imap(design_wrapper, scenarios_to_design), total=len(scenarios_to_design)))

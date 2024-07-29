@@ -72,12 +72,12 @@ if __name__ == '__main__':
 
         # Load prior scenario samples.
         scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
-        scenarios = data_handling.load_scenarios(scenarios_path)
+        scenarios, measurements = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
         # Load posterior optimal system designs.
         designs_path_pattern = os.path.join(post_results_dir,'designs','s{j}_posterior_design_results.csv')
-        scenario_tuples = list(enumerate(scenarios))[offset:offset+scenarios_to_do]
+        scenario_tuples = list(enumerate(measurements))[offset:offset+scenarios_to_do]
 
         # Set up output directory.
         out_dir = os.path.join(post_results_dir,'evals')

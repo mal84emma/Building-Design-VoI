@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     from experiments.configs.general_config import *
 
-    expt_type = 'shape'
-    expt_name = 'constr_solar'
-    info_type = 'type'
+    expt_type = 'level'
+    expt_name = 'unconstr'
+    info_type = 'mean+peak'
 
     results_dir = os.path.join('experiments','results',expt_type)
 

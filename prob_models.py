@@ -25,9 +25,13 @@ def shape_prior_model(n_buildings,n_samples,prob_config):
 
     Returns:
         np.array: Array of scenarios (Nx2 arrays of building-year tuples).
+        np.array: Array of measurements (building ids only, no year information).
     """
 
-    return np.array([list(zip(np.random.choice(prob_config['ids'], n_buildings),np.random.choice(prob_config['years'], n_buildings))) for _ in range(n_samples)])
+    bs = np.random.choice(prob_config['ids'], (n_samples,n_buildings))
+    ys = np.random.choice(prob_config['years'], (n_samples,n_buildings))
+
+    return np.array([list(zip(bs[i],ys[i])) for i in range(n_samples)]), np.array([list(zip(bs[i],[-1]*n_buildings)) for i in range(n_samples)])
 
 def shape_posterior_model(sampled_ids,n_samples,prob_config):
     """Sample scenarios of building-year load profile pairs from posterior distribution,
@@ -37,7 +41,7 @@ def shape_posterior_model(sampled_ids,n_samples,prob_config):
     likelihood.
 
     Args:
-        sampled_ids (list[int]): List of building ids in posterior scenarios.
+        sampled_ids (list[int]): List of building ids (measurements) in posterior scenarios.
         n_samples (int): Number of scenarios to samples from prior.
         prob_config (dict): Parameters defining probability model configuration.
 
@@ -61,6 +65,7 @@ def level_prior_model(n_buildings,n_samples,prob_config):
 
     Returns:
         np.array: Array of scenarios (Nx4 arrays of building-year-mean-peak tuples).
+        np.array: Array of measurements (building id, and mean & peak load values, no year information).
     """
 
     bs = np.random.choice(prob_config['ids'], (n_samples,n_buildings))
@@ -68,31 +73,34 @@ def level_prior_model(n_buildings,n_samples,prob_config):
     mus = np.round(np.random.normal(prob_config['mean_load_mean'], prob_config['mean_load_std'], (n_samples,n_buildings)),1)
     ps = np.round(np.random.uniform(prob_config['peak_load_min'], prob_config['peak_load_max'], (n_samples,n_buildings)),1)
 
-    return np.array([list(zip(bs[i],ys[i],mus[i],ps[i])) for i in range(n_samples)])
+    # sample measured values
+    msrd_mus = np.round(np.random.normal(mus,mus*prob_config['mean_load_msr_error']),1)
+    msrd_ps = np.round(np.random.normal(ps,ps*prob_config['peak_load_msr_error']),1)
+
+    return np.array([list(zip(bs[i],ys[i],mus[i],ps[i])) for i in range(n_samples)]), np.array([list(zip(bs[i],[-1]*n_buildings,msrd_mus[i],msrd_ps[i])) for i in range(n_samples)])
 
 def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_config,info='mean+peak'):
     """Sample scenarios of (building-year) & (mean-peak) pairs from posterior distribution.
     i.e. with given (sampled) set of building ids, and mean & peak loads.
     Scenarios are Nx4 arrays of building-year-mean-peak tuples for each of the N buildings in the system.
-    Posterior assumed perfect information provided by sample for building ids, and
+    Posterior assumes perfect information provided by sample for building ids, and imperfect info
     mean and/or peak load.
-    Posterior models for both mean and peak loads are implemented using Stan.
-    As the function accepts a sample of the *true* mean and peaks loads (taken
-    from the prior), first a measurement is sampled, before the posterior
-    (theta|z, giving hypothesised param values) is sampled using Stan.
+    The mean and peak load samples used are the **measured** values, not the true values.
 
     Args:
         sampled_ids (list[int]): List of sampled building ids (used for all
             posterior scenarios).
-        sampled_mus (list[float]): List of sampled mean loads (kW).
-        sampled_peaks (list[float]): List of sampled peak loads (kW).
+        NOTE: for the imperfect info posterior, the mean and peak load samples
+        must be the **measured values**, not the true values.
+        sampled_mus (list[float]): List of measured mean loads (kW).
+        sampled_peaks (list[float]): List of measured peak loads (kW).
         n_samples (int): Number of scenarios to samples from prior.
         prob_config (dict): Parameters defining probability model configuration.
         info (str, optional): Type of information provided to posterior by
             sample. One of ['mean', 'peak', 'mean+peak']. Defaults to 'mean+peak'.
 
     Returns:
-        np.array: Array of scenarios (Nx4 arrays of building-year-mean-peak tuples).
+        np.array: Array of scenarios, theta|z (Nx4 arrays of building-year-mean-peak tuples).
     """
 
     n_buildings = len(sampled_ids)
@@ -105,9 +113,8 @@ def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_c
 
         building_mus = []
         for mu in sampled_mus:
-            z = np.random.normal(mu,mu*prob_config['mean_load_msr_error']) # sample z given true theta
             # sample theta|z from posterior using Stan
-            data = {'mu':prob_config['mean_load_mean'],'sigma':prob_config['mean_load_std'],'error':prob_config['mean_load_msr_error'],'z':z}
+            data = {'mu':prob_config['mean_load_mean'],'sigma':prob_config['mean_load_std'],'error':prob_config['mean_load_msr_error'],'z':mu}
             inits = {'theta':prob_config['mean_load_mean']}
             post_fit = mean_stan_model.sample(data=data, inits=inits, iter_warmup=n_samples, iter_sampling=n_samples*prob_config['thin_factor'], chains=1, show_progress=False)
             candidate_mus = np.round(post_fit.stan_variable('theta')[::prob_config['thin_factor']],1)
@@ -122,9 +129,8 @@ def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_c
 
         building_ps = []
         for p in sampled_peaks:
-            z = np.random.normal(p,p*prob_config['peak_load_msr_error']) # sample z given true theta
             # sample theta|z from posterior using Stan
-            data = {'low':prob_config['peak_load_min'],'high':prob_config['peak_load_max'],'error':prob_config['peak_load_msr_error'],'z':z}
+            data = {'low':prob_config['peak_load_min'],'high':prob_config['peak_load_max'],'error':prob_config['peak_load_msr_error'],'z':p}
             inits = {'theta':np.mean([prob_config['peak_load_min'],prob_config['peak_load_max']])}
             post_fit = peak_stan_model.sample(data=data, inits=inits, iter_warmup=n_samples, iter_sampling=n_samples*prob_config['thin_factor'], chains=1, show_progress=False)
             candidate_ps = np.round(post_fit.stan_variable('theta')[::prob_config['thin_factor']],1)
@@ -140,8 +146,10 @@ def level_posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_c
 if __name__ == '__main__':
     # give it a spin
 
-    n_buildings = 4
-    n_samples = 1000
+    np.random.seed(0)
+
+    n_buildings = 5
+    n_samples = 3
     years = list(range(2012, 2018))
     ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118]
 
@@ -157,18 +165,20 @@ if __name__ == '__main__':
     'thin_factor': 10
     }
 
-    shape_prior_scenarios = shape_prior_model(n_buildings, n_samples, prob_config)
+    shape_prior_scenarios, shape_prior_measurements = shape_prior_model(n_buildings, n_samples, prob_config)
     print("Shape prior scenarios:")
     print(shape_prior_scenarios)
+    print(shape_prior_measurements)
 
-    shape_posterior_scenarios = shape_posterior_model(shape_prior_scenarios[0][:,0], n_samples, prob_config)
+    shape_posterior_scenarios = shape_posterior_model(shape_prior_measurements[0][:,0], n_samples, prob_config)
     print("Shape posterior scenarios:")
     print(shape_posterior_scenarios)
 
-    level_prior_scenarios = level_prior_model(n_buildings, n_samples, prob_config)
+    level_prior_scenarios, level_prior_measurements = level_prior_model(n_buildings, n_samples, prob_config)
     print("Level prior scenarios:")
     print(level_prior_scenarios)
+    print(level_prior_measurements)
 
-    level_posterior_scenarios = level_posterior_model(level_prior_scenarios[0][:,0], level_prior_scenarios[0][:,2], level_prior_scenarios[0][:,3], n_samples, prob_config)
+    level_posterior_scenarios = level_posterior_model(level_prior_measurements[0][:,0], level_prior_measurements[0][:,2], level_prior_measurements[0][:,3], n_samples, prob_config)
     print("Level posterior scenarios:")
     print(level_posterior_scenarios)
