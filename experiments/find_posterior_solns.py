@@ -18,18 +18,6 @@ from model_wrappers import posterior_design
 from prob_models import shape_posterior_model, level_posterior_model
 
 
-def retry_wrapper(*args, **kwargs):
-
-    for _ in range(3):
-        try:
-            design_result = posterior_design(*args, **kwargs)
-            break
-        except Exception as e:
-            print(f'Error: {e}')
-            time.sleep(1)
-
-    return design_result
-
 
 if __name__ == '__main__':
 
@@ -106,7 +94,7 @@ if __name__ == '__main__':
 
         # Set up wrapper function for posterior design.
         design_wrapper = partial(
-            retry_wrapper, #posterior_design,
+            posterior_design,
             out_dir=out_dir,
             prob_config=prob_config,
             posterior_model=posterior_model,
@@ -127,3 +115,17 @@ if __name__ == '__main__':
                 design_results = list(tqdm(pool.imap(design_wrapper, scenarios_to_design), total=len(scenarios_to_design)))
         else:
             design_results = [design_wrapper(t) for t in tqdm([(None,s) for s in scenarios_to_design])]
+
+
+
+# def retry_wrapper(*args, **kwargs):
+
+#     for _ in range(3):
+#         try:
+#             design_result = posterior_design(*args, **kwargs)
+#             break
+#         except Exception as e:
+#             print(f'Error: {e}')
+#             time.sleep(1)
+
+#     return design_result
