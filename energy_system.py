@@ -313,15 +313,17 @@ def evaluate_system(
     # Plot system profiles
     # ====================
     if plot:
-        fig = init_profile_fig(y_titles={'y1':'Building energy (kWh)', 'y2':'Battery SoC (kWh)', 'y3':'Price ($/kWh)'})
+        fig = init_profile_fig(y_titles={'y1':'Energy flow (kWh)', 'y2':'State of Charge (kWh)', 'y3':'Price ($/kWh)'})
 
         fig = add_profile(fig, grid_draw, name='Grid load')
-        fig = add_profile(fig, env.buildings[0].pv.get_generation(env.buildings[0].energy_simulation.solar_generation), name=f'Solar')
         for b in env.buildings:
+            fig = add_profile(fig, b.energy_simulation.non_shiftable_load, name=f'{b.name} load')
             fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} net load')
             fig = add_profile(fig, b.electrical_storage.soc, name=f'{b.name} SoC', yaxis='y2')
+        fig = add_profile(fig, env.buildings[0].pv.get_generation(env.buildings[0].energy_simulation.solar_generation), name=f'Solar generation')
         fig = add_profile(fig, env.buildings[0].pricing.electricity_pricing, name='Electricity price', yaxis='y3')
 
+        #fig['layout']['xaxis'].update(range=['2000-04-24','2000-05-01'])
         fig.write_html(f'{os.path.splitext(os.path.basename(schema_path))[0]}_plot.html')
         fig.show()
 
