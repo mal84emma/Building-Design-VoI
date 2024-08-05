@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     expt_type = 'level'
     expt_name = 'unconstr'
-    info_type = 'mean+peak'
+    info_type = 'mean'
 
     results_dir = os.path.join('experiments','results',expt_type)
 

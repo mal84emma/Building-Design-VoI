@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     expt_type = 'level'
     expt_name = 'unconstr'
-    info_type = 'mean+peak'
+    info_type = 'mean'
 
     results_dir = os.path.join('experiments','results',expt_type)
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # ============================
     post_MC_estimates = {}
     posterior_eval_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info','evals')
-    posterior_eval_results_files = [file for file in os.listdir(posterior_eval_results_dir) if file.endswith(".csv")]
+    posterior_eval_results_files = sorted([file for file in os.listdir(posterior_eval_results_dir) if file.endswith(".csv")])
     post_eval_results = [data_handling.load_eval_results(os.path.join(posterior_eval_results_dir, file)) for file in posterior_eval_results_files]
     post_mean_costs = [np.mean([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]
     post_MC_estimates[info_type] = [np.mean(post_mean_costs[:i+1]) for i in range(len(post_mean_costs))]
