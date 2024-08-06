@@ -7,29 +7,20 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 # run using `python -m experiments.{fname}`
 
 import numpy as np
-from prob_models import shape_prior_model, level_prior_model
+from prob_models import prior_model
 import utils.data_handling as data_handling
 
 
 if __name__ == '__main__':
 
     # Get run options
-    expt_type = str(sys.argv[1])
+    n_buildings = int(sys.argv[1])
 
-    from experiments.configs.general_config import *
-    if expt_type == 'shape':
-        from experiments.configs.shape_expts_config import *
-        prior_model = shape_prior_model
-    elif expt_type == 'level':
-        from experiments.configs.level_expts_config import *
-        prior_model = level_prior_model
-    else:
-        raise ValueError('Invalid run option for `expt_type`. Please provide valid CLI argument.')
-
+    from experiments.configs.config import *
 
     n_samples = 1000
 
-    save_path = os.path.join(results_dir,'sampled_scenarios.csv')
+    save_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
 
     # Perform sampling.
     np.random.seed(0)

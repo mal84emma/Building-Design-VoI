@@ -12,20 +12,18 @@ from utils import data_handling
 
 if __name__ == '__main__':
 
-    from experiments.configs.general_config import *
+    from experiments.configs.config import *
 
-    expt_type = 'level'
     expt_name = 'unconstr'
+    n_buildings = 6
     info_type = 'mean'
-
-    results_dir = os.path.join('experiments','results',expt_type)
 
     # Load prior eval results.
     # ========================
     print('Prior:')
-    prior_design_results = data_handling.load_design_results(os.path.join(results_dir,'prior',f'{expt_name}_design_results.csv'))
+    prior_design_results = data_handling.load_design_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_design_results.csv'))
     prior_grid_cap = prior_design_results['grid_con_capacity']
-    prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_eval_results.csv'))
+    prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
     prior_costs = [res['objective'] for res in prior_eval_results]
     prior_mean_cost = np.mean(prior_costs)
     prior_cost_std = np.std(prior_costs)
@@ -41,7 +39,7 @@ if __name__ == '__main__':
     # Load posterior eval results.
     # ============================
     print(f'\nInfo type: {info_type}')
-    posterior_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info')
+    posterior_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     posterior_design_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'designs')) if file.endswith(".csv")]
     post_design_results = [data_handling.load_design_results(os.path.join(posterior_results_dir, 'designs', file)) for file in posterior_design_results_files]
     posterior_mean_grid_cap = np.mean([res['grid_con_capacity'] for res in post_design_results])

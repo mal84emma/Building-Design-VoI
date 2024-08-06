@@ -5,32 +5,7 @@ import time
 import utils
 import utils.data_handling as data_handling
 from energy_system import design_system, evaluate_multi_system_scenarios
-from prob_models import shape_posterior_model, level_posterior_model
 
-
-def sample_posterior(
-        posterior_model,
-        measured_scenario,
-        prob_config,
-        info_type,
-        n_post_samples
-    ):
-    """Orchestrate sampling of scenarios from posterior distribution.
-    I.e. pass correct information to posterior_model function based on
-    type of model, given by info_type.
-    """
-
-    if info_type == 'profile':
-        assert posterior_model == shape_posterior_model, 'Posterior model must be `shape` type for info `profile`.'
-        sampled_scenarios = [measured_scenario]
-    elif info_type == 'type':
-        assert posterior_model == shape_posterior_model, 'Posterior model must be `shape` type for info `type`.'
-        sampled_scenarios = posterior_model(measured_scenario[:,0], n_post_samples, prob_config)
-    elif info_type in ['mean','peak','mean+peak']:
-        assert posterior_model == level_posterior_model, 'Posterior model must be `level` type for info `mean` or `peak`.'
-        sampled_scenarios = posterior_model(measured_scenario[:,0], measured_scenario[:,2], measured_scenario[:,3], n_post_samples, prob_config, info=info_type)
-
-    return sampled_scenarios
 
 
 def posterior_design(
@@ -82,8 +57,8 @@ def posterior_design(
     if solver_kwargs['solver'] == 'GUROBI':
         solver_kwargs['env'] = utils.get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
 
-    # Sample scenarios from posterior model based on info type.
-    sampled_scenarios = sample_posterior(posterior_model,measured_scenario,prob_config,info_type,n_post_samples)
+    # Sample scenarios from posterior model
+    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],prob_config,info_type,n_post_samples)
 
     # Design system.
     start = time.time()
@@ -161,8 +136,8 @@ def posterior_evaluation(
     # Load system design.
     system_design = data_handling.load_design_results(design_results_path_pattern.format(j=scenario_num))
 
-    # Sample scenarios from posterior model based on info type.
-    sampled_scenarios = sample_posterior(posterior_model,measured_scenario,prob_config,info_type,n_post_samples)
+    # Sample scenarios from posterior model
+    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],prob_config,info_type,n_post_samples)
 
     # Evaluate system.
     if show_progress: print(f'\nStarting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')

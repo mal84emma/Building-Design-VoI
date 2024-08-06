@@ -17,13 +17,15 @@ import seaborn as sns
 
 if __name__ == '__main__':
 
-    from experiments.configs.general_config import *
+    from experiments.configs.config import *
+
+    n_buildings = 6
 
     dataset_dir = os.path.join('data','processed')
     building_fname_pattern = 'ly_{id}-{year}.csv'
 
     # Load prior scenario samples.
-    scenarios_path = os.path.join('experiments','results','shape','sampled_scenarios.csv')
+    scenarios_path = os.path.join('experiments','results',f'sampled_scenarios_{n_buildings}b.csv')
     scenarios = data_handling.load_scenarios(scenarios_path)
     n_buildings = scenarios.shape[1]
 

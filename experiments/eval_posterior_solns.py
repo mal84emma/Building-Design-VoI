@@ -13,29 +13,21 @@ import multiprocess as mp
 from functools import partial
 from utils import data_handling
 from model_wrappers import posterior_evaluation
-from prob_models import shape_posterior_model, level_posterior_model
+from prob_models import posterior_model
 
 
 if __name__ == '__main__':
 
     # Run params
-    scenarios_to_do = 160
+    scenarios_to_do = 256
     offset = 0
 
     # Get run options
-    expt_type = str(sys.argv[1])
-    expt_id = int(sys.argv[2])
+    expt_id = int(sys.argv[1])
+    n_buildings = int(sys.argv[2])
     info_id = int(sys.argv[3])
 
-    from experiments.configs.general_config import *
-    if expt_type == 'shape':
-        from experiments.configs.shape_expts_config import *
-        posterior_model = shape_posterior_model
-    elif expt_type == 'level':
-        from experiments.configs.level_expts_config import *
-        posterior_model = level_posterior_model
-    else:
-        raise ValueError('Invalid run option for `expt_type`. Please provide valid CLI argument.')
+    from experiments.configs.config import *
 
     if expt_id == 0:
         expt_name = 'unconstr'
@@ -53,7 +45,7 @@ if __name__ == '__main__':
     elif info_id == 2:
         info_type = 'peak'
     elif info_id == 3:
-        info_type = 'mean+peak'
+        info_type = 'type+mean+peak'
     else:
         raise ValueError('Invalid run option for `info_id`. Please provide valid CLI argument.')
 
@@ -61,7 +53,7 @@ if __name__ == '__main__':
     np.random.seed(0)
     n_processes = mp.cpu_count()
 
-    post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info')
+    post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     if not os.path.exists(os.path.join(post_results_dir,'evals')):
         os.makedirs(os.path.join(post_results_dir,'evals'))
 
@@ -71,7 +63,7 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=UserWarning)
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
         scenarios, measurements = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 

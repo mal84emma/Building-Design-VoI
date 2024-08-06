@@ -16,15 +16,9 @@ from energy_system import design_system, evaluate_multi_system_scenarios
 if __name__ == '__main__':
 
     # Get run options
-    expt_type = str(sys.argv[1])
+    n_buildings = int(sys.argv[1])
 
-    from experiments.configs.general_config import *
-    if expt_type == 'shape':
-        from experiments.configs.shape_expts_config import *
-    elif expt_type == 'level':
-        from experiments.configs.level_expts_config import *
-    else:
-        raise ValueError('Invalid run option for `expt_type`. Please provide valid CLI argument.')
+    from experiments.configs.config import *
 
     options_dicts = [
         {
@@ -66,7 +60,7 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore", category=UserWarning)
 
         # Load prior scenario samples.
-        scenarios_path = os.path.join(results_dir,'sampled_scenarios.csv')
+        scenarios_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
         scenarios,_ = data_handling.load_scenarios(scenarios_path)
         n_buildings = scenarios.shape[1]
 
@@ -97,7 +91,7 @@ if __name__ == '__main__':
             for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
                 print(design_results[key])
 
-            out_path = os.path.join(results_dir,'prior',d['case_name']+'_design_results.csv')
+            out_path = os.path.join(results_dir,'prior',f'{d['case_name']}_{n_buildings}b_design_results.csv')
             data_handling.save_design_results(design_results, out_path)
 
             # Evaluate system.
@@ -115,5 +109,5 @@ if __name__ == '__main__':
             )
             print(d['case_name'], mean_cost)
 
-            out_path = os.path.join(results_dir,'prior',d['case_name']+'_eval_results.csv')
+            out_path = os.path.join(results_dir,'prior',f'{d['case_name']}_{n_buildings}b_eval_results.csv')
             data_handling.save_eval_results(eval_results, design_results, scenarios, out_path)

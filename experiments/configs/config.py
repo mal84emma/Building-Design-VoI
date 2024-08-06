@@ -5,6 +5,7 @@ import os
 # Directorioes and file patterns
 dataset_dir = os.path.join('data','processed')
 building_fname_pattern = 'ly_{id}-{year}.csv'
+results_dir = os.path.join('experiments','results')
 
 # Available years and building ids
 years = list(range(2012, 2018))
@@ -12,7 +13,7 @@ ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
 
 # Simulation parameters
 num_reduced_scenarios = 10 # no. of reduced scenarios used in Bryn's thesis
-n_post_samples = 320 # determined from MC convergence plots
+n_post_samples = 256 # determined from MC convergence plots
 
 # Cost parameters
 cost_dict = {
@@ -30,5 +31,12 @@ cost_dict = {
 # Probability model parameters
 prob_config = {
     'ids': ids,
-    'years': years
+    'years': years,
+    'mean_load_mean': 100.0,
+    'mean_load_std': 25.0,
+    'mean_load_msr_error': 0.1,
+    'peak_load_min': 200.0,
+    'peak_load_max': 400.0,
+    'peak_load_msr_error': 0.075,
+    'thin_factor': 10
 }

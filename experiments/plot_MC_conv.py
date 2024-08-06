@@ -12,17 +12,15 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-    from experiments.configs.general_config import *
+    from experiments.configs.config import *
 
-    expt_type = 'level'
     expt_name = 'unconstr'
+    n_buildings = 6
     info_type = 'mean'
-
-    results_dir = os.path.join('experiments','results',expt_type)
 
     # Load prior eval results.
     # ========================
-    prior_eval_results_path = os.path.join(results_dir,'prior',f'{expt_name}_eval_results.csv')
+    prior_eval_results_path = os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv')
     prior_eval_results = data_handling.load_eval_results(prior_eval_results_path)
     prior_costs = [res['objective'] for res in prior_eval_results]
     prior_MC_estimates = [np.mean(prior_costs[:i+1]) for i in range(len(prior_costs))]
@@ -30,7 +28,7 @@ if __name__ == '__main__':
     # Load posterior eval results.
     # ============================
     post_MC_estimates = {}
-    posterior_eval_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{info_type}_info','evals')
+    posterior_eval_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info','evals')
     posterior_eval_results_files = sorted([file for file in os.listdir(posterior_eval_results_dir) if file.endswith(".csv")])
     post_eval_results = [data_handling.load_eval_results(os.path.join(posterior_eval_results_dir, file)) for file in posterior_eval_results_files]
     post_mean_costs = [np.mean([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]
