@@ -58,7 +58,7 @@ def posterior_design(
         solver_kwargs['env'] = utils.get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
 
     # Sample scenarios from posterior model
-    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],prob_config,info_type,n_post_samples)
+    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],n_post_samples,prob_config,info_type)
 
     # Design system.
     start = time.time()
@@ -137,7 +137,7 @@ def posterior_evaluation(
     system_design = data_handling.load_design_results(design_results_path_pattern.format(j=scenario_num))
 
     # Sample scenarios from posterior model
-    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],prob_config,info_type,n_post_samples)
+    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],n_post_samples,prob_config,info_type)
 
     # Evaluate system.
     if show_progress: print(f'\nStarting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
