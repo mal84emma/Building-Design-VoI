@@ -74,6 +74,8 @@ if __name__ == '__main__':
 
         for d in options_dicts: # options specifiying each partial system
 
+            case_name = d['case_name']
+
             # Design system.
             # ==============
             design_results = design_system(
@@ -87,11 +89,11 @@ if __name__ == '__main__':
                 show_progress=True
             )
 
-            print(d['case_name'])
+            print(case_name)
             for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
                 print(design_results[key])
 
-            out_path = os.path.join(results_dir,'prior',f'{d['case_name']}_{n_buildings}b_design_results.csv')
+            out_path = os.path.join(results_dir,'prior',f'{case_name}_{n_buildings}b_design_results.csv')
             data_handling.save_design_results(design_results, out_path)
 
             # Evaluate system.
@@ -107,7 +109,7 @@ if __name__ == '__main__':
                 n_processes=n_processes,
                 show_progress=True
             )
-            print(d['case_name'], mean_cost)
+            print(case_name, mean_cost)
 
-            out_path = os.path.join(results_dir,'prior',f'{d['case_name']}_{n_buildings}b_eval_results.csv')
+            out_path = os.path.join(results_dir,'prior',f'{case_name}_{n_buildings}b_eval_results.csv')
             data_handling.save_eval_results(eval_results, design_results, scenarios, out_path)
