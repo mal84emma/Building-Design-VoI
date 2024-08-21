@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
     n_post_samples = 1000 # override config settings to get more samples for scenario reduction
-    n_concurrent_designs = 8
+    n_concurrent_designs = 12
     # need to be careful with this as L1/2 cache size may be exceeded, causing slowdown due to increased misses
 
     post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
