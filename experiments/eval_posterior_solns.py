@@ -24,13 +24,13 @@ def retry_wrapper(*args, **kwargs):
 
     for _ in range(5):
         try:
-            design_result = posterior_evaluation(*args, **kwargs)
+            eval_result = posterior_evaluation(*args, **kwargs)
             break
         except Exception as e:
             print(f'Error: {e}')
             time.sleep(1)
 
-    return design_result
+    return eval_result
 
 
 if __name__ == '__main__':
