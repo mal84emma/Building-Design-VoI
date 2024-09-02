@@ -14,33 +14,40 @@ if __name__ == '__main__':
 
     from experiments.configs.config import *
 
-    expt_name = 'unconstr'
-    n_buildings = 6
-    info_type = 'mean'
+    # Get run options
+    expt_id = int(sys.argv[1])
+    n_buildings = int(sys.argv[2])
+    info_id = int(sys.argv[3])
 
-    # Load prior eval results.
-    # ========================
-    print('Prior:')
-    prior_design_results = data_handling.load_design_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_design_results.csv'))
-    prior_grid_cap = prior_design_results['grid_con_capacity']
-    prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
-    prior_costs = [res['objective'] for res in prior_eval_results]
-    prior_mean_cost = np.mean(prior_costs)
-    prior_cost_std = np.std(prior_costs)
-    print(f'Prior Mean Cost: {prior_mean_cost}')
-    print(f'Prior Cost Std: {prior_cost_std}')
-    print(f'Prior Mean Std Error: {prior_cost_std/np.sqrt(len(prior_costs))}')
-    print('Overall min-max: ', np.min(prior_costs), np.max(prior_costs))
-    print(f'Prior Cost Range: {np.max(prior_costs) - np.min(prior_costs)}')
-    print(f'Prior grid cap: {prior_grid_cap}')
+    from experiments.configs.config import *
 
-    print('')
+    if expt_id == 0:
+        expt_name = 'unconstr'
+        sizing_constraints = {'battery':None,'solar':None}
+    elif expt_id == 1:
+        expt_name = 'solar_constr'
+        sizing_constraints = {'battery':None,'solar':150.0}
+    else:
+        raise ValueError('Invalid run option for `expt_id`. Please provide valid CLI argument.')
 
-    # Load posterior eval results.
+    if info_id == 0:
+        info_type = 'type'
+    elif info_id == 1:
+        info_type = 'mean'
+    elif info_id == 2:
+        info_type = 'peak'
+    elif info_id == 3:
+        info_type = 'type+mean+peak'
+    else:
+        raise ValueError('Invalid run option for `info_id`. Please provide valid CLI argument.')
+
+
+        # Load posterior eval results.
     # ============================
     print(f'\nInfo type: {info_type}')
     posterior_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     posterior_design_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'designs')) if file.endswith(".csv")]
+    n_post_samples = len(posterior_design_results_files)
     post_design_results = [data_handling.load_design_results(os.path.join(posterior_results_dir, 'designs', file)) for file in posterior_design_results_files]
     posterior_mean_grid_cap = np.mean([res['grid_con_capacity'] for res in post_design_results])
     posterior_eval_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'evals')) if file.endswith(".csv")]
@@ -61,6 +68,26 @@ if __name__ == '__main__':
     print(f'Posterior Mean Cost Range: {posterior_mean_cost_range}')
     print(f'Posterior Mean Min and Max Cost: {posterior_mean_min_cost}, {posterior_mean_max_cost}')
     print(f'Posterior Mean Grid Cap: {posterior_mean_grid_cap}')
+
+    print('')
+
+    # Load prior eval results.
+    # ========================
+    print('Prior:')
+    prior_design_results = data_handling.load_design_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_design_results.csv'))
+    prior_grid_cap = prior_design_results['grid_con_capacity']
+    prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
+    prior_costs = [res['objective'] for res in prior_eval_results][:n_post_samples]
+    # only use prior cost samples corresponding to posterior samples for fair comparison
+    # keeps VoI > 0 as prior and posterior are compared on same ground-truth scenarios
+    prior_mean_cost = np.mean(prior_costs)
+    prior_cost_std = np.std(prior_costs)
+    print(f'Prior Mean Cost: {prior_mean_cost}')
+    print(f'Prior Cost Std: {prior_cost_std}')
+    print(f'Prior Mean Std Error: {prior_cost_std/np.sqrt(len(prior_costs))}')
+    print('Overall min-max: ', np.min(prior_costs), np.max(prior_costs))
+    print(f'Prior Cost Range: {np.max(prior_costs) - np.min(prior_costs)}')
+    print(f'Prior grid cap: {prior_grid_cap}')
 
     # Compute Value of Information.
     # =============================
