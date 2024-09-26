@@ -42,15 +42,22 @@ if __name__ == '__main__':
         raise ValueError('Invalid run option for `info_id`. Please provide valid CLI argument.')
 
 
-        # Load posterior eval results.
+    # Load posterior eval results.
     # ============================
     print(f'\nInfo type: {info_type}')
     posterior_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     posterior_design_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'designs')) if file.endswith(".csv")]
+    scenario_numbers = [int(file.split('_')[0][1:]) for file in posterior_design_results_files]
+    posterior_design_results_files = [dfile for scen_num,dfile in sorted(zip(scenario_numbers, posterior_design_results_files))]
+
+    posterior_eval_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'evals')) if file.endswith(".csv")]
+    scenario_numbers = [int(file.split('_')[0][1:]) for file in posterior_eval_results_files]
+    posterior_eval_results_files = [efile for scen_num,efile in sorted(zip(scenario_numbers, posterior_eval_results_files))]
+
     n_post_samples = len(posterior_design_results_files)
+
     post_design_results = [data_handling.load_design_results(os.path.join(posterior_results_dir, 'designs', file)) for file in posterior_design_results_files]
     posterior_mean_grid_cap = np.mean([res['grid_con_capacity'] for res in post_design_results])
-    posterior_eval_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'evals')) if file.endswith(".csv")]
     post_eval_results = [data_handling.load_eval_results(os.path.join(posterior_results_dir, 'evals', file)) for file in posterior_eval_results_files]
     post_mean_costs = [np.mean([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]
     posterior_mean_cost = np.mean(post_mean_costs)

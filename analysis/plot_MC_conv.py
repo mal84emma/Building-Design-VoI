@@ -47,6 +47,8 @@ if __name__ == '__main__':
     post_MC_estimates = {}
     posterior_eval_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info','evals')
     posterior_eval_results_files = sorted([file for file in os.listdir(posterior_eval_results_dir) if file.endswith(".csv")])
+    scenario_numbers = [int(file.split('_')[0][1:]) for file in posterior_eval_results_files]
+    posterior_eval_results_files = [efile for scen_num,efile in sorted(zip(scenario_numbers, posterior_eval_results_files))]
     n_post_samples = len(posterior_eval_results_files)
     post_eval_results = [data_handling.load_eval_results(os.path.join(posterior_eval_results_dir, file)) for file in posterior_eval_results_files]
     post_mean_costs = [np.mean([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]
