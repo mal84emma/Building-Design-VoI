@@ -25,7 +25,7 @@ if __name__ == '__main__':
         expt_name = 'unconstr'
         sizing_constraints = {'battery':None,'solar':None}
     elif expt_id == 1:
-        expt_name = 'solar_constr'
+        expt_name = 'constr_solar'
         sizing_constraints = {'battery':None,'solar':150.0}
     else:
         raise ValueError('Invalid run option for `expt_id`. Please provide valid CLI argument.')
