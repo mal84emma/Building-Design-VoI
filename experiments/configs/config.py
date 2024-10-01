@@ -15,6 +15,9 @@ ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
 num_reduced_scenarios = 10 # no. of reduced scenarios used in Bryn's thesis
 n_post_samples = 256 # determined from MC convergence plots
 
+# Solar constraint
+solar_constraint = 150.0
+
 # Cost parameters
 cost_dict = {
     'carbon': 1.0, # $/kgCO2

@@ -1,5 +1,7 @@
 """Helper functions for running experiments."""
 
+from experiments.configs.config import solar_constraint
+
 
 def parse_experiment_args(expt_id, n_buildings, info_id):
 
@@ -9,7 +11,7 @@ def parse_experiment_args(expt_id, n_buildings, info_id):
         sizing_constraints = {'battery':None,'solar':None}
     elif expt_id == 1:
         expt_name = 'constr_solar'
-        sizing_constraints = {'battery':None,'solar':150.0}
+        sizing_constraints = {'battery':None,'solar':solar_constraint}
     else:
         raise ValueError('Invalid run option for `expt_id`. Please provide valid CLI argument.')
 

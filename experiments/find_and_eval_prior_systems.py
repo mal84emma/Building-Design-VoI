@@ -28,7 +28,7 @@ if __name__ == '__main__':
         },
         {
             'case_name': 'constr_solar',
-            'sizing_constraints': {'battery':None,'solar':150.0},
+            'sizing_constraints': {'battery':None,'solar':solar_constraint},
             'use_battery': True
         },
         {

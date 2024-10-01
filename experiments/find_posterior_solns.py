@@ -14,6 +14,7 @@ import gurobipy as gp
 import multiprocess as mp
 from functools import partial
 from utils import data_handling
+from experiments.configs.experiments import parse_experiment_args
 from model_wrappers import posterior_design
 from prob_models import posterior_model
 
@@ -40,32 +41,11 @@ if __name__ == '__main__':
     scenarios_to_do = 256
     offset = 0
 
-    # Get run options
-    expt_id = int(sys.argv[1])
-    n_buildings = int(sys.argv[2])
-    info_id = int(sys.argv[3])
-
     from experiments.configs.config import *
 
-    if expt_id == 0:
-        expt_name = 'unconstr'
-        sizing_constraints = {'battery':None,'solar':None}
-    elif expt_id == 1:
-        expt_name = 'constr_solar'
-        sizing_constraints = {'battery':None,'solar':150.0}
-    else:
-        raise ValueError('Invalid run option for `expt_id`. Please provide valid CLI argument.')
-
-    if info_id == 0:
-        info_type = 'type'
-    elif info_id == 1:
-        info_type = 'mean'
-    elif info_id == 2:
-        info_type = 'peak'
-    elif info_id == 3:
-        info_type = 'type+mean+peak'
-    else:
-        raise ValueError('Invalid run option for `info_id`. Please provide valid CLI argument.')
+    # Get run options
+    [expt_id,n_buildings,info_id] = [int(sys.argv[i]) for i in range(1,4)]
+    expt_name, sizing_constraints, info_type = parse_experiment_args(expt_id, n_buildings, info_id)
 
 
     np.random.seed(0)
