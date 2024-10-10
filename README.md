@@ -6,3 +6,11 @@ Using `python=3.9`
 It also appears that you have to run `prob_models.py` first to generate the Stan model binaries before they can be called in more complex scripts (e.g. while using concurrency).
 
 To prevent `gurobi.lic` file from being uploaded to repo, using command 'git update-index --assume-unchanged FILE_NAME' to prevent tracking of changes to the file.
+
+# Running experiments
+
+Run all scripts from root dir using syntax
+
+```
+python -m {experiments/analysis}.{fname} {options}
+```

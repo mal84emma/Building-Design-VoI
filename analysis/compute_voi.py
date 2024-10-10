@@ -1,11 +1,7 @@
 """Compute Value of Information from test results."""
 
-# Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-# run using `python -m experiments.{fname}`
-
 from utils import data_handling
 from experiments.configs.experiments import parse_experiment_args
 

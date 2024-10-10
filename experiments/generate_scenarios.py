@@ -1,11 +1,7 @@
 """Sample and save (common) scenarios used for VoI calculations."""
 
-# Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-# run using `python -m experiments.{fname}`
-
 import numpy as np
 from prob_models import prior_model
 import utils.data_handling as data_handling

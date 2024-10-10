@@ -1,11 +1,7 @@
 """Quantify benefit derived from each part of the system for prior case."""
 
-# Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-# run using `python -m experiments.{fname}`
-
 import warnings
 import numpy as np
 import gurobipy as gp

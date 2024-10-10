@@ -1,11 +1,6 @@
 """Compute capacity factors for PV in each year of data."""
 
-# Hack to emulate running files from root directory.
 import os
-import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-# run using `python -m experiments.{fname}`
-
 import numpy as np
 import pandas as pd
 
