@@ -1,38 +1,18 @@
 """Compute posterior optimal system designs."""
 
-# Hack to emulate running files from root directory.
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-# run using `python -m experiments.{fname}`
-
-import time
 import warnings
 from tqdm import tqdm
 import numpy as np
 import gurobipy as gp
 import multiprocess as mp
 from functools import partial
-from utils import data_handling
+from utils import data_handling, retry_wrapper
 from experiments.configs.experiments import parse_experiment_args
 from model_wrappers import posterior_design
 from prob_models import posterior_model
 
-
-def retry_wrapper(*args, **kwargs):
-    """Retry wrapper for posterior design.
-    Scenario reduction sometimes fails to initialize, so retry
-    5 times to allow it to succeed."""
-
-    for _ in range(5):
-        try:
-            design_result = posterior_design(*args, **kwargs)
-            break
-        except Exception as e:
-            print(f'Error: {e}')
-            time.sleep(1)
-
-    return design_result
 
 
 if __name__ == '__main__':
@@ -81,7 +61,7 @@ if __name__ == '__main__':
 
         # Set up wrapper function for posterior design.
         design_wrapper = partial(
-            posterior_design, #retry_wrapper
+            retry_wrapper(posterior_design),
             out_dir=out_dir,
             prob_config=prob_config,
             posterior_model=posterior_model,
