@@ -6,8 +6,10 @@ from utils import data_handling
 from experiments.configs.experiments import parse_experiment_args
 
 import numpy as np
+from scipy.stats import linregress
 from matplotlib import pyplot as plt
 from matplotlib import cm
+from matplotlib import colormaps as cmaps
 
 
 if __name__ == '__main__':
@@ -33,13 +35,19 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
 
     post_grid_caps = [res['grid_con_capacity'] for res in post_design_results]
+    post_solar_caps = [np.sum(res['solar_capacities']) for res in post_design_results]
+    post_battery_caps = [np.sum(res['battery_capacities']) for res in post_design_results]
     norm = plt.Normalize(min(post_grid_caps), max(post_grid_caps))
-    cmap = cm.get_cmap('viridis')
+    cmap = cmaps['viridis']
+
+    # compute linear regression for storage vs solar capacity
+    reg = linregress(post_solar_caps,post_battery_caps)
+    print('storage vs solar', reg.slope, reg.intercept)
 
     # posterior
     plt.scatter(
-        x=[np.sum(res['solar_capacities']) for res in post_design_results],
-        y=[np.sum(res['battery_capacities']) for res in post_design_results],
+        x=post_solar_caps,
+        y=post_battery_caps,
         c=post_grid_caps,
         norm=norm,
         cmap=cmap,
@@ -49,6 +57,9 @@ if __name__ == '__main__':
         lw=0,
         zorder=0
     )
+    # linear regression line
+    reg_xs = np.linspace(min(post_solar_caps), max(post_solar_caps), 100)
+    plt.plot(reg_xs, reg.slope*reg_xs + reg.intercept, 'k-', alpha=0.5, label='Regression')
     # prior
     plt.scatter(
         x=np.sum(prior_design_results['solar_capacities']),
@@ -75,21 +86,27 @@ if __name__ == '__main__':
     # ================================================
     fig, ax = plt.subplots()
 
-    prior_av_load = np.mean(prior_design_results['reduced_scenarios'][:,:,2])
-    post_av_loads = [np.sum(res['reduced_scenarios'][:,:,2]) for res in post_design_results]
+    prior_av_load = np.sum(np.mean(prior_design_results['reduced_scenarios'][:,:,2],axis=0))
+    post_av_loads = [np.sum(np.mean(res['reduced_scenarios'][:,:,2],axis=0)) for res in post_design_results]
 
-    for var in ['solar_capacities','battery_capacities','grid_con_capacity']:
+    for label,var in zip(['Solar capacity (kWp)','Battery capacity (kWh)','Grid con. capacity (kW)'],['solar_capacities','battery_capacities','grid_con_capacity']):
+        xs = np.array(post_av_loads)
+        ys = np.array([np.sum(res[var]) for res in post_design_results])
+        reg = linregress(post_av_loads,ys)
+        print(var, reg.slope, reg.intercept)
+        plt.plot(xs, reg.slope*xs + reg.intercept,'k-', alpha=0.5, label='_nolegend_',zorder=0)
         plt.scatter(
-            x=post_av_loads,
-            y=[np.sum(res[var]) for res in post_design_results],
-            label=var,
+            x=xs,
+            y=ys,
+            label=label,
             marker='o',
             alpha=0.5,
             lw=0,
-            zorder=0
+            zorder=1
         )
 
     plt.xlabel('Scenario Mean Total Load (kW)')
+    plt.ylabel('Optimised district capacity for posterior scenario')
 
     plt.legend()
     plt.show()
