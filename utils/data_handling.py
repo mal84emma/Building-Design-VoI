@@ -130,15 +130,16 @@ def save_eval_results(results, design, scenarios, out_path):
 def load_eval_results(in_path):
     """Load evaluation results for multiple scenarios from CSV."""
 
-    results = []
     with open(in_path, 'r') as csvfile:
         reader = csv.reader(csvfile)
         eval_rows = [row for row in reader][7:]
 
+    results = []
     for row in eval_rows:
         result = {
             'objective': float(row[1]),
-            'objective_contrs': [float(t) for t in row[2:8]]
+            'objective_contrs': [float(t) for t in row[2:8]],
+            'scenario': [ast.literal_eval(t) for t in row[8:]]
         }
         results.append(result)
 
