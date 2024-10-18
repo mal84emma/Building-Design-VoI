@@ -54,7 +54,7 @@ if __name__ == '__main__':
     )
     plt.xlabel('Total mean load (kW)')
     plt.ylabel('Total scenario cost (£m)')
-    plt.show()
+    #plt.show()
 
     fig, ax = plt.subplots()
     total_peak_loads = [np.sum(scen[:,3]) for scen in scenarios]
@@ -68,20 +68,30 @@ if __name__ == '__main__':
     )
     plt.xlabel('Total peak load (kW)')
     plt.ylabel('Total scenario cost (£m)')
-    plt.show()
+    #plt.show()
 
     # Plot distributions of total scenario costs.
     # ===========================================
     fig, ax = plt.subplots()
     sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k', lw=2)
+    ymax = ax.get_ylim()[1]
+    plt.vlines(np.mean(prior_costs)/1e6, 0, ymax, colors='k', linestyles='dashed', lw=2)
+    plt.text(np.mean(prior_costs)/1e6*0.995, ymax*0.4, f'Mean cost: £{np.mean(prior_costs)/1e6:.1f}m', rotation=90, verticalalignment='center', horizontalalignment='right')
     plt.xlabel('Total scenario cost (£m)')
+    plt.ylim(0, ymax)
     ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
     plt.savefig(os.path.join('plots','prior_total_costs.pdf'))
-    plt.show()
+    #plt.show()
 
     fig, ax = plt.subplots()
     sns.kdeplot(prior_lcoes, label='Prior', ax=ax, c='k', lw=2)
+    ymax = ax.get_ylim()[1]
+    plt.vlines(np.mean(prior_lcoes), 0, ymax, colors='k', linestyles='dashed', lw=2)
+    plt.text(np.mean(prior_lcoes)*0.9975, ymax*0.4, f'Mean LCOE: £{np.mean(prior_lcoes):.3f}/kWh', rotation=90, verticalalignment='center', horizontalalignment='right')
     plt.xlabel('Scenario LCOE (£/kWh)')
+    plt.ylim(0, ymax)
     ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
     plt.savefig(os.path.join('plots','prior_lcoes.pdf'))
-    plt.show()
+    #plt.show()
