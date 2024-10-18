@@ -6,6 +6,7 @@ from utils import data_handling
 from experiments.configs.experiments import parse_experiment_args
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 
@@ -27,6 +28,17 @@ if __name__ == '__main__':
     prior_grid_cap = prior_design_results['grid_con_capacity']
     prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
     prior_costs = [res['objective'] for res in prior_eval_results]
+    prior_lcoes = prior_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
+
+    # Analyse prior costs.
+    # ====================
+    max_grid_ex_cost = np.max([res['objective_contrs'][2] for res in prior_eval_results])
+    max_grid_ex_power = max_grid_ex_cost/(cost_dict['grid_excess']*365*cost_dict['opex_factor'])
+    max_grid_ex_frac = max_grid_ex_power/prior_grid_cap*100
+    n_grid_ex_scenarios = np.sum([res['objective_contrs'][2] > 0 for res in prior_eval_results])
+    print(f'Max grid exceedance cost (£): {max_grid_ex_cost:.0f}')
+    print(f'Max grid exceedance power (kW): {max_grid_ex_power:.0f} ({max_grid_ex_frac:.1f}%)')
+    print(f'No. grid exceedance scenarios: {n_grid_ex_scenarios}/{len(prior_costs)}')
 
     # Plot correlations between scenario cost and mean & peak load.
     # =============================================================
@@ -61,11 +73,15 @@ if __name__ == '__main__':
     # Plot distributions of total scenario costs.
     # ===========================================
     fig, ax = plt.subplots()
-    sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k')
+    sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k', lw=2)
     plt.xlabel('Total scenario cost (£m)')
+    ax.get_yaxis().set_ticks([])
+    plt.savefig(os.path.join('plots','prior_total_costs.pdf'))
     plt.show()
 
     fig, ax = plt.subplots()
-    sns.kdeplot(prior_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios]), label='Prior', ax=ax, c='k')
+    sns.kdeplot(prior_lcoes, label='Prior', ax=ax, c='k', lw=2)
     plt.xlabel('Scenario LCOE (£/kWh)')
+    ax.get_yaxis().set_ticks([])
+    plt.savefig(os.path.join('plots','prior_lcoes.pdf'))
     plt.show()
