@@ -14,6 +14,8 @@ if __name__ == '__main__':
     from experiments.configs.config import *
 
     results_dir = os.path.join('experiments','results')
+    scenarios_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
+    scenarios,_ = data_handling.load_scenarios(scenarios_path)
 
     cases = ['unconstr','constr_solar','battery_only','solar_only','neither']
 
@@ -35,15 +37,17 @@ if __name__ == '__main__':
 
     # Compare eval results for each system case.
     # ==========================================
-    columns = ['mean total','mean elec','mean carbon','mean grid ex','N ex scens','total std','total min','total max']
+    columns = ['mean total','mean lcoe','mean elec','mean carbon','mean grid ex','N ex scens','total std','total min','total max']
     cost_results = pd.DataFrame(index=cases,columns=columns)
 
     for case in cases:
         eval_results_path = os.path.join(results_dir,'prior',f'{case}_{n_buildings}b_eval_results.csv')
         eval_results = data_handling.load_eval_results(eval_results_path)
         overall_costs = [res['objective'] for res in eval_results]
+        lcoes = overall_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
         cost_results.loc[case] = [
             np.mean(overall_costs),
+            np.mean(lcoes),
             np.mean([res['objective_contrs'][0] for res in eval_results]),
             np.mean([res['objective_contrs'][1] for res in eval_results]),
             np.mean([res['objective_contrs'][2] for res in eval_results]),

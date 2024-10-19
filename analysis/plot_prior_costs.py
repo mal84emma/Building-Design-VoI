@@ -36,6 +36,10 @@ if __name__ == '__main__':
     max_grid_ex_power = max_grid_ex_cost/(cost_dict['grid_excess']*365*cost_dict['opex_factor'])
     max_grid_ex_frac = max_grid_ex_power/prior_grid_cap*100
     n_grid_ex_scenarios = np.sum([res['objective_contrs'][2] > 0 for res in prior_eval_results])
+
+    print(np.mean(prior_costs),np.std(prior_costs),np.std(prior_costs)/np.mean(prior_costs))
+    print(np.mean(prior_lcoes),np.std(prior_lcoes),np.std(prior_lcoes)/np.mean(prior_lcoes))
+    print('')
     print(f'Max grid exceedance cost (£): {max_grid_ex_cost:.0f}')
     print(f'Max grid exceedance power (kW): {max_grid_ex_power:.0f} ({max_grid_ex_frac:.1f}%)')
     print(f'No. grid exceedance scenarios: {n_grid_ex_scenarios}/{len(prior_costs)}')

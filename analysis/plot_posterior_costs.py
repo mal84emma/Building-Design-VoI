@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # ===========================================
     fig, ax = plt.subplots()
     sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k', alpha=0.5, lw=2)
-    sns.kdeplot(np.array(posterior_costs)/1e6, label='Posterior', ax=ax, c='k', lw=2)
+    sns.kdeplot(np.array(posterior_costs)/1e6, label='Pre-Posterior', ax=ax, c='k', lw=2)
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_costs)/1e6, 0, ymax, colors='k', alpha=0.5, linestyles='dashed', lw=1.5)
     plt.vlines(np.mean(posterior_costs)/1e6, 0, ymax, colors='k', linestyles='dashed', lw=1.5)
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     sns.kdeplot(prior_lcoes, label='Prior', ax=ax, c='k', alpha=0.5, lw=2)
-    sns.kdeplot(posterior_lcoes, label='Posterior', ax=ax, c='k', lw=2)
+    sns.kdeplot(posterior_lcoes, label='Pre-Posterior', ax=ax, c='k', lw=2)
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_lcoes), 0, ymax, colors='k', alpha=0.5, linestyles='dashed', lw=2)
     plt.text(np.mean(prior_lcoes)*1.005, ymax*0.3, f'Mean: £{np.mean(prior_lcoes):.3f}/kWh', alpha=0.5, rotation=90, va='center', ha='left')
