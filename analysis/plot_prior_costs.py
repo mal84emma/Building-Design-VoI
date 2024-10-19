@@ -13,6 +13,8 @@ import seaborn as sns
 
 if __name__ == '__main__':
 
+    plt.style.use('./resources/plots.mplstyle')
+
     from experiments.configs.config import *
 
     # Get run options

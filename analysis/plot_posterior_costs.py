@@ -12,6 +12,8 @@ import seaborn as sns
 
 if __name__ == '__main__':
 
+    plt.style.use('./resources/plots.mplstyle')
+
     from experiments.configs.config import *
 
     # Get run options
@@ -49,7 +51,7 @@ if __name__ == '__main__':
              arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6, headlength=8))
     plt.annotate('', xy=(np.mean(posterior_costs)/1e6, ymax*0.4), xytext=(np.mean(posterior_costs)/1e6 - 1.25, ymax*0.4),
              arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6, headlength=8))
-    plt.text(np.mean([*prior_costs,*posterior_costs])/1e6, ymax*0.445, 'VoI', va='center', ha='center', fontsize=12, fontfamily='serif',
+    plt.text(np.mean([*prior_costs,*posterior_costs])/1e6, ymax*0.44, 'VoI', va='center', ha='center', fontsize=12, fontfamily='serif',
              bbox=dict(facecolor='white', edgecolor='none', boxstyle='square,pad=0.125'))
     plt.xlabel('Total scenario cost (£m)')
     plt.ylim(0, ymax)
