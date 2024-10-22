@@ -24,10 +24,12 @@ if __name__ == '__main__':
     # ===============================
     scenarios_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
     scenarios,_ = data_handling.load_scenarios(scenarios_path)
+    scenarios = scenarios[:n_post_samples]
 
     prior_design_results = data_handling.load_design_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_design_results.csv'))
     prior_grid_cap = prior_design_results['grid_con_capacity']
     prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
+    prior_eval_results = prior_eval_results[:n_post_samples]
     prior_costs = [res['objective'] for res in prior_eval_results]
     prior_lcoes = prior_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
 
@@ -51,7 +53,7 @@ if __name__ == '__main__':
              arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6, headlength=8))
     plt.annotate('', xy=(np.mean(posterior_costs)/1e6, ymax*0.4), xytext=(np.mean(posterior_costs)/1e6 - 1.25, ymax*0.4),
              arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6, headlength=8))
-    plt.text(np.mean([*prior_costs,*posterior_costs])/1e6, ymax*0.44, 'VoI', va='center', ha='center', fontsize=12, fontfamily='serif',
+    plt.text(np.mean([np.mean(prior_costs),np.mean(posterior_costs)])/1e6, ymax*0.44, 'VoI', va='center', ha='center', fontsize=12, fontfamily='serif',
              bbox=dict(facecolor='white', edgecolor='none', boxstyle='square,pad=0.125'))
     plt.xlabel('Total scenario cost (£m)')
     plt.ylim(0, ymax)

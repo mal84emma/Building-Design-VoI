@@ -25,10 +25,12 @@ if __name__ == '__main__':
     # ===============================
     scenarios_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
     scenarios,_ = data_handling.load_scenarios(scenarios_path)
+    scenarios = scenarios[:n_post_samples]
 
     prior_design_results = data_handling.load_design_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_design_results.csv'))
     prior_grid_cap = prior_design_results['grid_con_capacity']
     prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
+    prior_eval_results = prior_eval_results[:n_post_samples]
     prior_costs = [res['objective'] for res in prior_eval_results]
     prior_lcoes = prior_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
 
@@ -82,7 +84,7 @@ if __name__ == '__main__':
     sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k', lw=2)
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_costs)/1e6, 0, ymax, colors='k', linestyles='dashed', lw=2)
-    plt.text(np.mean(prior_costs)/1e6*0.995, ymax*0.4, f'Mean cost: £{np.mean(prior_costs)/1e6:.1f}m', rotation=90, verticalalignment='center', horizontalalignment='right')
+    plt.text(np.mean(prior_costs)/1e6*0.995, ymax*0.4, f'Mean cost: £{np.mean(prior_costs)/1e6:.3f}m', rotation=90, verticalalignment='center', horizontalalignment='right')
     plt.xlabel('Total scenario cost (£m)')
     plt.ylim(0, ymax)
     ax.get_yaxis().set_ticks([])

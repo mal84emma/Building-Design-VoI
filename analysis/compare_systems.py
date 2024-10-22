@@ -16,6 +16,7 @@ if __name__ == '__main__':
     results_dir = os.path.join('experiments','results')
     scenarios_path = os.path.join(results_dir,f'sampled_scenarios_{n_buildings}b.csv')
     scenarios,_ = data_handling.load_scenarios(scenarios_path)
+    scenarios = scenarios[:n_post_samples]
 
     cases = ['unconstr','constr_solar','battery_only','solar_only','neither']
 
@@ -43,6 +44,7 @@ if __name__ == '__main__':
     for case in cases:
         eval_results_path = os.path.join(results_dir,'prior',f'{case}_{n_buildings}b_eval_results.csv')
         eval_results = data_handling.load_eval_results(eval_results_path)
+        eval_results = eval_results[:n_post_samples]
         overall_costs = [res['objective'] for res in eval_results]
         lcoes = overall_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
         cost_results.loc[case] = [

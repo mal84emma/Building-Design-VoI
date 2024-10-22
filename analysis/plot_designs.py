@@ -94,6 +94,9 @@ if __name__ == '__main__':
     cbar.ax.tick_params(labelsize=8)
 
     # axis distribution plots
+    print('solar', np.std(post_solar_caps), np.std(post_solar_caps)/np.mean(post_solar_caps))
+    print('battery', np.std(post_battery_caps), np.std(post_battery_caps)/np.mean(post_battery_caps))
+    print('grid', np.std(post_grid_caps), np.std(post_grid_caps)/np.mean(post_grid_caps))
 
     ax2 = ax.twinx()
     ax2.yaxis.set_visible(False)
@@ -150,4 +153,35 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join('plots',f'{expt_name}_{n_buildings}b_posterior_designs_correlation.pdf'))
+    #plt.show()
+
+
+    # plot normalised version to investigate spread about regression line
+    fig, ax = plt.subplots()
+
+    for i,(label,var) in enumerate(zip(['Battery capacity (kWh)','Solar capacity (kWp)','Grid con. capacity (kW)']
+                                       ,['battery_capacities','solar_capacities','grid_con_capacity'])):
+        xs = np.array(post_av_loads)
+        ys = np.array([np.sum(res[var]) for res in post_design_results])
+        c = plt.rcParams['axes.prop_cycle'].by_key()['color'][i]
+        reg = linregress(post_av_loads,ys)
+        plt.plot(xs, np.ones(len(xs)),'k-', alpha=0.5, label='_nolegend_',zorder=0)
+        plt.scatter(
+            x=xs,
+            y=ys/(reg.slope*xs + reg.intercept),
+            color=c,
+            label=label,
+            marker='o',
+            alpha=0.5,
+            lw=0,
+            zorder=1
+        )
+        sns.kdeplot(x=xs, y=ys/(reg.slope*xs + reg.intercept), ax=ax, fill=True, color=c, alpha=0.25, zorder=0,
+                    levels=5, thresh=0.05, label='__nolegend__')
+
+    plt.xlabel('Scenario District Mean Load (kW)')
+    plt.ylabel('Normalised district capacity for posterior scenario')
+    plt.legend()
+    plt.tight_layout()
+    #plt.savefig(os.path.join('plots',f'{expt_name}_{n_buildings}b_posterior_designs_norm_correlation.pdf'))
     plt.show()
