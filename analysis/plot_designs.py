@@ -60,7 +60,7 @@ if __name__ == '__main__':
         zorder=10,
         lw=0.5
     )
-        # linear regression line
+    # linear regression line
     reg_xs = np.linspace(min(post_solar_caps), max(post_solar_caps), 100)
     ax.plot(reg_xs, reg.slope*reg_xs + reg.intercept, 'k-', alpha=0.5, label='__nolegend__', zorder=0)
     # posterior

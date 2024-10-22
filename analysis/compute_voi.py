@@ -75,5 +75,6 @@ if __name__ == '__main__':
     # =============================
     print('')
     voi = prior_mean_cost - posterior_mean_cost
+    print(f'Pre-posterior costs as % of Prior Mean Cost: {posterior_mean_cost/prior_mean_cost*100:.3f}%')
     print(f'Value of Information ({info_type} info): {voi}')
     print(f'VOI as % of Prior Mean Cost: {voi/prior_mean_cost*100:.3f}%')
