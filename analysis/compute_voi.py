@@ -46,6 +46,7 @@ if __name__ == '__main__':
     print(f'Posterior Cost Mean Std: {posterior_mean_cost_std}')
     print(f'Posterior Overall Cost Std: {posterior_overall_cost_std}')
     print('Mean min-max: ', np.min(post_mean_costs), np.max(post_mean_costs))
+    print('Mean range: ', np.mean([np.ptp([res['objective'] for res in scenario_results]) for scenario_results in post_eval_results]))
     print('Overall min-max: ', *[f([res['objective'] for scenario_results in post_eval_results for res in scenario_results]) for f in [np.min, np.max]])
     print(f'Posterior Mean Cost Range: {posterior_mean_cost_range}')
     print(f'Posterior Mean Min and Max Cost: {posterior_mean_min_cost}, {posterior_mean_max_cost}')
@@ -68,6 +69,7 @@ if __name__ == '__main__':
     print(f'Prior Cost Std: {prior_cost_std}')
     print(f'Prior Mean Std Error: {prior_cost_std/np.sqrt(len(prior_costs))}')
     print('Overall min-max: ', np.min(prior_costs), np.max(prior_costs))
+    print('Overall range: ', np.ptp(prior_costs))
     print(f'Prior Cost Range: {np.max(prior_costs) - np.min(prior_costs)}')
     print(f'Prior grid cap: {prior_grid_cap}')
 

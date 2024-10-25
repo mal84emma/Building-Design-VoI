@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # Plot distributions of total scenario costs.
     # ===========================================
     fig, ax = plt.subplots()
-    sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k', lw=2)
+    sns.kdeplot(np.array(prior_costs)/1e6, label='Prior', ax=ax, c='k', lw=2, cut=0)
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_costs)/1e6, 0, ymax, colors='k', linestyles='dashed', lw=2)
     plt.text(np.mean(prior_costs)/1e6*0.995, ymax*0.4, f'Mean cost: £{np.mean(prior_costs)/1e6:.3f}m', rotation=90, verticalalignment='center', horizontalalignment='right')
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     #plt.show()
 
     fig, ax = plt.subplots()
-    sns.kdeplot(prior_lcoes, label='Prior', ax=ax, c='k', lw=2)
+    sns.kdeplot(prior_lcoes, label='Prior', ax=ax, c='k', lw=2, cut=0)
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_lcoes), 0, ymax, colors='k', linestyles='dashed', lw=2)
     plt.text(np.mean(prior_lcoes)*0.9975, ymax*0.4, f'Mean LCOE: £{np.mean(prior_lcoes):.3f}/kWh', rotation=90, verticalalignment='center', horizontalalignment='right')
