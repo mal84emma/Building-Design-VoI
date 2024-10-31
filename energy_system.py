@@ -29,6 +29,7 @@ from load_scenario_reduction import reduce_load_scenarios
 from utils import data_handling
 from utils import generate_temp_building_files, build_schema, get_Gurobi_WLS_env
 from utils.plotting import init_profile_fig, add_profile
+import matplotlib.colors as mcolors
 from linmodel import LinProgModel
 from citylearn.citylearn import CityLearnEnv
 
@@ -313,17 +314,39 @@ def evaluate_system(
     # Plot system profiles
     # ====================
     if plot:
+        colors = list(mcolors.TABLEAU_COLORS.values())
+
         fig = init_profile_fig(y_titles={'y1':'Energy flow (kWh)', 'y2':'State of Charge (kWh)', 'y3':'Price ($/kWh)'})
 
-        fig = add_profile(fig, grid_draw, name='Grid load')
-        for b in env.buildings:
-            fig = add_profile(fig, b.energy_simulation.non_shiftable_load, name=f'{b.name} load')
-            fig = add_profile(fig, b.net_electricity_consumption, name=f'{b.name} net load')
-            fig = add_profile(fig, b.electrical_storage.soc, name=f'{b.name} SoC', yaxis='y2')
-        fig = add_profile(fig, env.buildings[0].pv.get_generation(env.buildings[0].energy_simulation.solar_generation), name=f'Solar generation')
-        fig = add_profile(fig, env.buildings[0].pricing.electricity_pricing, name='Electricity price', yaxis='y3')
+        # plot district level profiles
+        fig = add_profile(fig, grid_draw, name='Grid load', line=dict(color='black', width=3))
 
-        #fig['layout']['xaxis'].update(range=['2000-04-24','2000-05-01'])
+        total_load = np.sum([b.energy_simulation.non_shiftable_load for b in env.buildings],axis=0)
+        fig = add_profile(fig, total_load, name='Total load', line=dict(color='black', width=3, dash='dash'))
+        total_solar = np.sum([b.pv.get_generation(b.energy_simulation.solar_generation) for b in env.buildings],axis=0)
+        fig = add_profile(fig, total_solar, name=f'Total solar', line=dict(color='black', width=3, dash='dot'))
+        total_soc = np.sum([b.electrical_storage.soc for b in env.buildings],axis=0)
+        fig = add_profile(fig, total_soc, name='Total SoC', yaxis='y2', line=dict(color='rgba(0,0,0,0.5)', width=3))
+
+        fig = add_profile(fig, env.buildings[0].pricing.electricity_pricing, name='Electricity price', yaxis='y3',
+                          line=dict(color='hotpink', width=3), visible='legendonly')
+
+        # plot building level profiles
+        for i,b in enumerate(env.buildings):
+            rgb_color = mcolors.to_rgb(colors[i])
+            fig = add_profile(fig, b.net_electricity_consumption, name=f'Building {i}', visible='legendonly',
+                              legendgroup=b.name, line=dict(color=colors[i], width=2.5))
+            fig = add_profile(fig, b.energy_simulation.non_shiftable_load, name='Load',
+                              legendgroup=b.name, visible='legendonly', showlegend=False,
+                              line=dict(color=colors[i], width=2.5, dash='dash'))
+            fig = add_profile(fig, b.pv.get_generation(b.energy_simulation.solar_generation), name='Solar',
+                              legendgroup=b.name, visible='legendonly', showlegend=False,
+                              line=dict(color=colors[i], width=2.5, dash='dot'))
+            fig = add_profile(fig, b.electrical_storage.soc, yaxis='y2', name='SoC',
+                              legendgroup=b.name, visible='legendonly', showlegend=False,
+                              line=dict(color=f'rgba{rgb_color+(0.5,)}', width=2.5))
+
+        fig['layout']['xaxis'].update(range=['2000-04-24','2000-05-01'])
         fig.write_html(f'{os.path.splitext(os.path.basename(schema_path))[0]}_plot.html')
         fig.show()
 

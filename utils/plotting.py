@@ -67,7 +67,7 @@ def init_profile_fig(title=None, y_titles=None) -> Figure:
 
     return fig
 
-def add_profile(fig, profile, name=None, yaxis='y', visible=True) -> Figure:
+def add_profile(fig, profile, yaxis='y', **kwargs) -> Figure:
 
     n_steps = len(profile)
     timestamps = pd.date_range(start='2000-01-01', periods=n_steps, freq='H')
@@ -75,10 +75,9 @@ def add_profile(fig, profile, name=None, yaxis='y', visible=True) -> Figure:
     fig.add_trace(go.Scatter(
         x=timestamps,
         y=profile,
-        name=name,
         connectgaps=False,
         yaxis=yaxis,
-        visible=visible
+        **kwargs
         )
     )
 
