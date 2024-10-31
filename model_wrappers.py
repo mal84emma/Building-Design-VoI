@@ -33,7 +33,7 @@ def posterior_design(
         prob_config (dict): Parameters defining probability model configuration.
         posterior_model (function): Function to samples scenarios from
             posterior distribution conditioned on measured scenario.
-        info_type (str): One of ['profile','type','mean','peak','mean+peak'].
+        info_type (str): One of ['type','mean','peak','type+mean+peak'].
             Type of information provided by sampled scenario, determining
             posterior dist. to use, i.e. sampling procedure in `posterior_model`.
         n_post_samples (int): No. of samples to draw from posterior.
@@ -113,7 +113,7 @@ def posterior_evaluation(
         prob_config (dict): Parameters defining probability model configuration.
         posterior_model (function): Function to samples scenarios from
             posterior distribution conditioned on measured scenario.
-        info_type (str): One of ['profile','type','mean','peak','mean+peak'].
+        info_type (str): One of ['type','mean','peak','type+mean+peak'].
             Type of information provided by sampled scenario, determining
             posterior dist. to use, i.e. sampling procedure in `posterior_model`.
         n_post_samples (int): No. of samples to draw from posterior.
