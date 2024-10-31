@@ -48,6 +48,29 @@ if __name__ == '__main__':
     print(f'Max grid exceedance power (kW): {max_grid_ex_power:.0f} ({max_grid_ex_frac:.1f}%)')
     print(f'No. grid exceedance scenarios: {n_grid_ex_scenarios}/{len(prior_costs)}')
 
+    rows = ['mean','prec','std']
+    fns = [
+        lambda x: round(np.mean(x)/1e6,3),
+        lambda x: round(np.mean(x)/np.mean(prior_costs)*100,1),
+        lambda x: round(np.std(x)/1e6,3)
+    ]
+    columns = ['total','elec','carbon','grid ex','grid','battery','solar']
+    cost_results = pd.DataFrame(index=rows,columns=columns)
+
+    for row,fn in zip(rows,fns):
+        cost_results.loc[row] = [
+            fn(prior_costs),
+            fn([res['objective_contrs'][0] for res in prior_eval_results]),
+            fn([res['objective_contrs'][1] for res in prior_eval_results]),
+            fn([res['objective_contrs'][2] for res in prior_eval_results]),
+            fn([res['objective_contrs'][3] for res in prior_eval_results]),
+            fn([res['objective_contrs'][4] for res in prior_eval_results]),
+            fn([res['objective_contrs'][5] for res in prior_eval_results]),
+        ]
+    cost_results['LCOE'] = [np.mean(prior_lcoes),np.mean(prior_lcoes),np.std(prior_lcoes)]
+    print('\nCosts:')
+    print(cost_results.T)
+
     # Plot correlations between scenario cost and mean & peak load.
     # =============================================================
     fig, ax = plt.subplots()
