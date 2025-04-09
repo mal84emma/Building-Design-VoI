@@ -1,0 +1,1 @@
+Note: when project updated to introduce solar stochasticity, solar files were copied over from the Estates Archive dataset rather than generating new datasets using tool.
