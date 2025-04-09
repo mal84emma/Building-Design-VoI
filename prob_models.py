@@ -177,7 +177,7 @@ if __name__ == '__main__':
         prior_measurements[0][:,4],
         n_samples,
         prob_config,
-        info='mean'
+        #info='mean'
         )
     print("Posterior scenarios:")
     print(posterior_scenarios)

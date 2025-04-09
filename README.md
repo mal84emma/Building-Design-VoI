@@ -10,8 +10,8 @@ A suitable environment for running this code can be initialised using [conda](ht
 ```
 conda create --name myenv python=3.9
 conda activate myenv
-conda install -c conda-forge cvxpy cmdstanpy
 pip install -r requirements.txt
+conda install -c conda-forge cvxpy==1.5.1 cmdstanpy==1.2.4
 ```
 
 Note:
