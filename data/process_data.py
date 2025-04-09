@@ -5,10 +5,10 @@ Three key steps:
     Two options for combining plug load and gas usage data:
     1. Computing electric heating load using gas usage data and assumed COP of heat pumps
     2. Computing electric heating load assuming equal plug load and heat electricity usage
-- Separate years of load data, saving as files with `ly_{building_id}-{year}.csv` name convention
+- Separate load_year of load data, saving as files with `ly_{building_id}-{year}.csv` name convention
 - Rescale load data to provide selected mean load
 
-This second step is helpful to improve efficiency of scenario generation, as buildings/years can be
+This second step is helpful to improve efficiency of scenario generation, as buildings/load_year can be
 selected by constructing schemas (only).
 """
 
@@ -24,10 +24,13 @@ if __name__ == '__main__':
     # ========================
     data_dir = 'from-database'
     out_dir = 'processed'
+    sname_pattern = 'solar_%s.csv'
+    soutname_pattern = 'sy_{year}.csv'
     bname_pattern = 'UCam_Building_b%s.csv'
-    outname_pattern = 'ly_{building_id}-{year}.csv'
+    boutname_pattern = 'ly_{building_id}-{year}.csv'
 
-    years = list(range(2012, 2018)) # valid years of data
+    solar_years = list(range(2010, 2020)) # valid solar_year of data
+    load_year = list(range(2012, 2018)) # valid load_year of data
     building_ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118] # available buildings
 
     prop_heat_electrification = 1.0 # proportion of heating load electrified
@@ -51,8 +54,12 @@ if __name__ == '__main__':
     carbon_data.to_csv(os.path.join(out_dir, 'carbon_intensity.csv'), index=False)
     weather_data.to_csv(os.path.join(out_dir, 'weather.csv'), index=False) # note, weather data is not used
 
-    # Load in 2022 solar data
-    solar_data = pd.read_csv(os.path.join(data_dir, 'solar_2023.csv'), header=0)['solar generation [W/kW]'].to_numpy()
+    ## Simplify and save solar data
+    for syear in solar_years:
+        solar_data = pd.read_csv(os.path.join(data_dir, sname_pattern%syear), header=0)['solar generation [W/kW]']
+        solar_data.rename({'solar generation [W/kW]':'Solar Generation [W/kW]'}, inplace=True)
+        solar_data = np.around(solar_data[:hours_per_year], 1)
+        solar_data.to_csv(os.path.join(out_dir, soutname_pattern.format(year=syear)), index=False)
 
     ## Process load data
     # Combine heat and electrical load data then save first 8760 hours
@@ -61,7 +68,7 @@ if __name__ == '__main__':
     for b_id in building_ids:
         load_data = pd.read_csv(os.path.join(data_dir, bname_pattern % b_id), header=0)
 
-        for year in years:
+        for year in load_year:
             year_first_idx = timestamps.index[timestamps['Timestamp (UTC)'].dt.year == year].min()
 
             elec_load = load_data.loc[year_first_idx:year_first_idx+hours_per_year-1, 'Equipment Electric Power [kWh]'].to_numpy()
@@ -76,14 +83,14 @@ if __name__ == '__main__':
             out_df = load_data.loc[year_first_idx:year_first_idx+hours_per_year-1].copy()
             out_df['Heating Load [kWh]'] = 0
             out_df['Equipment Electric Power [kWh]'] = np.around(norm_load*mean_load, 1)
-            out_df['Solar Generation [W/kW]'] = np.around(solar_data[:hours_per_year], 1)
-            out_df.to_csv(os.path.join(out_dir, outname_pattern.format(building_id=b_id, year=year)), index=False)
+            out_df['Solar Generation [W/kW]'] = -1 # indicate empty data
+            out_df.to_csv(os.path.join(out_dir, boutname_pattern.format(building_id=b_id, year=year)), index=False)
 
     ## Construct and save metadata
     mdata = {
         'time_generated': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
         'building_ids': building_ids,
-        'years': years,
+        'load_year': load_year,
         'mean_load (kWh/step)': mean_load,
         'split_type': split_type,
         'prop_heat_electrification': prop_heat_electrification if split_type == 'COP' else None,
