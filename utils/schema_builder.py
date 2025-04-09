@@ -13,8 +13,10 @@ import utils.data_processing as dp
 def generate_temp_building_files(
         scenario_vector,
         data_dir_path: Union[str, Path],
+        solar_file_pattern: str,
         building_file_pattern: str,
         scenario_no: int,
+        expt_no: int = None,
         process_id: int = None
     ):
     """Generate temporary building files for a scenario if required
@@ -26,9 +28,13 @@ def generate_temp_building_files(
             building in each scenario.
         data_dir_path (str or Path): Path to directory containing Citylearn compatible
             data.
+        solar_file_pattern (fstr): Pattern of solar generation data files. Must
+            contain {year} placeholder.
         building_file_pattern (fstr): Pattern of building load data files. Must
             contain {id} and {year} placeholders.
         scenario_no (int): Scenario number of file identification
+        expt_no (int, optional): Experiment number for tagging schemas when generating
+            temporary files. Defaults to None.
         process_id (int, optional): Process id for file identification. Defaults to None.
     
     Returns:
@@ -36,28 +42,29 @@ def generate_temp_building_files(
             Used to construct schema and for file cleanup.
     """
 
-    if scenario_vector.shape[1] == 2: # no file generation needed
-        load_files = [building_file_pattern.format(id=int(b),year=int(y)) for b,y in scenario_vector]
+    load_files = []
 
-    elif scenario_vector.shape[1] == 4: # generate temporary files
-        load_files = []
+    for i,b_tup in enumerate(scenario_vector):
+        solar_year, building_id, load_year, mean, peak = b_tup
 
-        for i,b_tup in enumerate(scenario_vector):
-            building_id, year, mean, peak = b_tup
+        temp_file = f'temp-prof_SB{i}_s{scenario_no}.csv'
+        if process_id is not None: temp_file = f'p{process_id}_' + temp_file
+        if expt_no is not None: temp_file = f'e{expt_no}_' + temp_file
+        load_files.append(temp_file) # generate temp file name
 
-            temp_file = f'temp-prof_SB{i}_s{scenario_no}.csv'
-            if process_id is not None:
-                temp_file = f'p{process_id}_' + temp_file
-            load_files.append(temp_file) # generate temp file name
+        # grab original data
+        original_building_file = pd.read_csv(os.path.join(data_dir_path, building_file_pattern.format(id=int(building_id), year=int(load_year))))
+        solar_generation = pd.read_csv(os.path.join(data_dir_path, solar_file_pattern.format(year=int(solar_year))))['Solar Generation [W/kW]'].to_numpy()
 
-            # grab original data, scale, and save to temp file
-            original_building_file = pd.read_csv(os.path.join(data_dir_path, building_file_pattern.format(id=int(building_id), year=int(year))))
-            profile = original_building_file['Equipment Electric Power [kWh]'].to_numpy()
-            scaled_profile = dp.scale_profile(profile, mean, peak)
+        # scale load profile
+        profile = original_building_file['Equipment Electric Power [kWh]'].to_numpy()
+        scaled_profile = dp.scale_profile(profile, mean, peak)
 
-            new_building_file = original_building_file.copy()
-            new_building_file['Equipment Electric Power [kWh]'] = scaled_profile
-            new_building_file.to_csv(os.path.join(data_dir_path,temp_file), index=False)
+        # load new data and save to temp file
+        new_building_file = original_building_file.copy()
+        new_building_file['Solar Generation [W/kW]'] = solar_generation
+        new_building_file['Equipment Electric Power [kWh]'] = scaled_profile
+        new_building_file.to_csv(os.path.join(data_dir_path,temp_file), index=False)
 
     return load_files
 

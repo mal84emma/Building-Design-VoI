@@ -14,6 +14,10 @@ if __name__ == '__main__':
     # Get run options
     n_buildings = int(sys.argv[1])
 
+    if len(sys.argv) > 2: expt_no = int(sys.argv[2])
+    else: expt_no = None
+
+
     from experiments.configs.config import *
 
     options_dicts = [
@@ -45,8 +49,6 @@ if __name__ == '__main__':
     ]
 
 
-    n_processes = mp.cpu_count()
-
     if not os.path.exists(os.path.join(results_dir,'prior')):
         os.makedirs(os.path.join(results_dir,'prior'))
 
@@ -63,49 +65,55 @@ if __name__ == '__main__':
         try:
             m = gp.Model()
             e = get_Gurobi_WLS_env()
-            solver_kwargs = {'solver': 'GUROBI', 'env': e}
+            solver_kwargs = {'solver': 'GUROBI','Threads':5,'env': e}
         except:
             solver_kwargs = {}
 
 
-        for d in options_dicts: # options specifiying each partial system
+        for n,d in enumerate(options_dicts): # options specifiying each partial system
 
-            case_name = d['case_name']
+            if (expt_no is None) or (expt_no == n):
 
-            # Design system.
-            # ==============
-            design_results = design_system(
-                scenarios,
-                dataset_dir,
-                building_fname_pattern,
-                cost_dict,
-                sizing_constraints=d['sizing_constraints'],
-                solver_kwargs=solver_kwargs,
-                num_reduced_scenarios=num_reduced_scenarios,
-                show_progress=True
-            )
+                case_name = d['case_name']
 
-            print(case_name)
-            for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
-                print(design_results[key])
+                # Design system.
+                # ==============
+                design_results = design_system(
+                    scenarios,
+                    dataset_dir,
+                    solar_fname_pattern,
+                    building_fname_pattern,
+                    cost_dict,
+                    sizing_constraints=d['sizing_constraints'],
+                    expt_no=n,
+                    solver_kwargs=solver_kwargs,
+                    num_reduced_scenarios=num_reduced_scenarios,
+                    show_progress=True
+                )
 
-            out_path = os.path.join(results_dir,'prior',f'{case_name}_{n_buildings}b_design_results.csv')
-            data_handling.save_design_results(design_results, out_path)
+                print(case_name)
+                for key in ['objective','objective_contrs','battery_capacities','solar_capacities','grid_con_capacity']:
+                    print(design_results[key])
 
-            # Evaluate system.
-            # ================
-            mean_cost, eval_results = evaluate_multi_system_scenarios(
-                scenarios,
-                design_results,
-                dataset_dir,
-                building_fname_pattern,
-                design=True,
-                cost_dict=cost_dict,
-                use_battery=d['use_battery'],
-                n_processes=n_processes,
-                show_progress=True
-            )
-            print(case_name, mean_cost)
+                out_path = os.path.join(results_dir,'prior',f'{case_name}_{n_buildings}b_design_results.csv')
+                data_handling.save_design_results(design_results, out_path)
 
-            out_path = os.path.join(results_dir,'prior',f'{case_name}_{n_buildings}b_eval_results.csv')
-            data_handling.save_eval_results(eval_results, design_results, scenarios, out_path)
+                # Evaluate system.
+                # ================
+                mean_cost, eval_results = evaluate_multi_system_scenarios(
+                    scenarios,
+                    design_results,
+                    dataset_dir,
+                    solar_fname_pattern,
+                    building_fname_pattern,
+                    design=True,
+                    cost_dict=cost_dict,
+                    use_battery=d['use_battery'],
+                    n_processes=n_processes,
+                    expt_no=n,
+                    show_progress=True
+                )
+                print(case_name, mean_cost)
+
+                out_path = os.path.join(results_dir,'prior',f'{case_name}_{n_buildings}b_eval_results.csv')
+                data_handling.save_eval_results(eval_results, design_results, scenarios, out_path)

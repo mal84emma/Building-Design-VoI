@@ -16,11 +16,13 @@ def posterior_design(
         info_type,
         n_post_samples,
         data_dir,
+        solar_file_pattern,
         building_file_pattern,
         cost_dict,
         sizing_constraints={},
         solver_kwargs={},
         num_reduced_scenarios=None,
+        expt_no=None,
         show_progress=False
     ):
     """Wrapper function for designing system based on posterior samples.
@@ -40,11 +42,13 @@ def posterior_design(
         NOTE: all args below are passed to `design_system` function. See docstring
             for details.
         data_dir (path):
+        solar_file_pattern (str):
         building_file_pattern (str):
         cost_dict (dict):
         sizing_constraints (dict, optional): Defaults to {}.
         solver_kwargs (dict, optional): Defaults to {}.
         num_reduced_scenarios (int, optional): Defaults to None.
+        expt_no (int, optional): Defaults to None.
         show_progress (bool, optional): Defaults to False.
 
     Returns:
@@ -58,19 +62,21 @@ def posterior_design(
         solver_kwargs['env'] = utils.get_Gurobi_WLS_env(silence=not show_progress if scenario_num != None else True)
 
     # Sample scenarios from posterior model
-    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],n_post_samples,prob_config,info_type)
+    sampled_scenarios = posterior_model(measured_scenario[:,1],measured_scenario[:,3],measured_scenario[:,4],n_post_samples,prob_config,info_type)
 
     # Design system.
     start = time.time()
     design_results = design_system(
             sampled_scenarios,
             data_dir,
+            solar_file_pattern,
             building_file_pattern,
             cost_dict,
             sizing_constraints=sizing_constraints,
             solver_kwargs=solver_kwargs,
             num_reduced_scenarios=num_reduced_scenarios,
             show_progress=show_progress if scenario_num != None else False,
+            expt_no=expt_no,
             process_id=scenario_num
         )
     end = time.time()
@@ -94,10 +100,12 @@ def posterior_evaluation(
         info_type,
         n_post_samples,
         data_dir,
+        solar_file_pattern,
         building_file_pattern,
         cost_dict,
         solver_kwargs={},
         n_processes=None,
+        expt_no=None,
         show_progress=True
     ):
     """Wrapper function for evaluating system based on posterior samples.
@@ -120,11 +128,13 @@ def posterior_evaluation(
         NOTE: all args below are passed to `evaluate_multi_system_scenarios`
             function. See docstring for details.
         data_dir (path):
+        solar_file_pattern (str):
         building_file_pattern (str):
         cost_dict (dict):
         solver_kwargs (dict, optional): Defaults to {}.
         num_reduced_scenarios (int, optional): Defaults to None.
         n_processes (int, optional): Defaults to None.
+        expt_no (int, optional): Defaults to None.
         show_progress (bool, optional): Defaults to False.
 
     Returns:
@@ -137,7 +147,7 @@ def posterior_evaluation(
     system_design = data_handling.load_design_results(design_results_path_pattern.format(j=scenario_num))
 
     # Sample scenarios from posterior model
-    sampled_scenarios = posterior_model(measured_scenario[:,0],measured_scenario[:,2],measured_scenario[:,3],n_post_samples,prob_config,info_type)
+    sampled_scenarios = posterior_model(measured_scenario[:,1],measured_scenario[:,3],measured_scenario[:,4],n_post_samples,prob_config,info_type)
 
     # Evaluate system.
     if show_progress: print(f'\nStarting scenario {scenario_num} evaluation @ {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}.')
@@ -146,11 +156,14 @@ def posterior_evaluation(
             sampled_scenarios,
             system_design,
             data_dir,
+            solar_file_pattern,
             building_file_pattern,
             design=True,
             cost_dict=cost_dict,
             solver_kwargs=solver_kwargs,
             n_processes=n_processes,
+            expt_no=expt_no,
+            process_id=scenario_num,
             show_progress=show_progress,
         )
     end = time.time()

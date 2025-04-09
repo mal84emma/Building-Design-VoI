@@ -2,13 +2,19 @@
 
 import os
 
-# Directorioes and file patterns
+# Machine settings
+n_concurrent_designs = None
+n_processes = None
+
+# Directories and file patterns
 dataset_dir = os.path.join('data','processed')
+solar_fname_pattern = 'sy_{year}.csv'
 building_fname_pattern = 'ly_{id}-{year}.csv'
-results_dir = os.path.join('experiments','results')
+results_dir = os.path.join('results')
 
 # Available years and building ids
-years = list(range(2012, 2018))
+solar_years = list(range(2010, 2020))
+load_years = list(range(2012, 2018))
 ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
 
 # Simulation parameters
@@ -34,7 +40,8 @@ cost_dict = {
 # Probability model parameters
 prob_config = {
     'ids': ids,
-    'years': years,
+    'solar_years': solar_years,
+    'load_years': load_years,
     'mean_load_mean': 100.0,
     'mean_load_std': 25.0,
     'mean_load_msr_error': 0.1,

@@ -38,6 +38,7 @@ from citylearn.citylearn import CityLearnEnv
 def design_system(
         sampled_scenarios,
         data_dir,
+        solar_file_pattern,
         building_file_pattern,
         cost_dict,
         sizing_constraints=None,
@@ -45,6 +46,7 @@ def design_system(
         num_reduced_scenarios=None,
         sim_duration=None,
         t_start=0,
+        expt_no=None,
         process_id=None,
         show_progress=False,
         return_profiles=False
@@ -58,6 +60,8 @@ def design_system(
             for each building in each scenario.
         data_dir (str or Path): Path to directory containing Citylearn compatible
             data.
+        solar_file_pattern (fstr): Pattern of solar generation data files. Must
+            contain {year} placeholder.
         building_file_pattern (fstr): Pattern of building load data files. Must
             contain {id} and {year} placeholders.
         cost_dict (dict):Dictionary of cost parameters for Stochastic Program.
@@ -72,6 +76,8 @@ def design_system(
             Stocasthic Program. If None, all available timesteps are used.
             Defaults to None.
         t_start (int, optional): Start timestep for data. Defaults to 0.
+        expt_no (int, optional): Experiment number for tagging schemas when generating
+            temporary files. Defaults to None.
         process_id (int, optional): Unique process ID for tagging schemas when
             fn called via multiprocessing. Defaults to None.
         show_progress (bool, optional): Whether to display progress. Defaults to False.
@@ -85,7 +91,7 @@ def design_system(
     ## Get load profiles for all scenarios (reduces load time)
     # ========================================================
     if show_progress: print("Loading data...")
-    building_year_pairs = np.unique(np.concatenate(sampled_scenarios,axis=0)[:,:2],axis=0)
+    building_year_pairs = np.unique(np.concatenate(sampled_scenarios,axis=0)[:,1:3],axis=0)
     load_profiles = {
         f'{int(building_id)}-{int(year)}': pd.read_csv(
             os.path.join(data_dir, building_file_pattern.format(id=int(building_id), year=int(year))),
@@ -118,7 +124,15 @@ def design_system(
     for m, scenario in enumerate(reduced_scenarios):
 
         # Get building files, generating temporary files if required (i.e. if scaling needed)
-        load_files = generate_temp_building_files(scenario, data_dir, building_file_pattern, m, process_id=process_id)
+        load_files = generate_temp_building_files(
+            scenario,
+            data_dir,
+            solar_file_pattern,
+            building_file_pattern,
+            scenario_no=m,
+            expt_no=expt_no,
+            process_id=process_id
+            )
         all_load_files.extend(load_files)
 
         # Build schema
@@ -128,8 +142,8 @@ def design_system(
         params['battery_efficiencies'] = [params['base_battery_efficiency']]*len(params['building_names'])
         params.pop('base_battery_efficiency', None)
         params['schema_name'] = f'SP_schema_s{m}'
-        if process_id is not None:
-            params['schema_name'] = f'p{process_id}_' + params['schema_name']
+        if process_id is not None: params['schema_name'] = f'p{process_id}_' + params['schema_name']
+        if expt_no is not None: params['schema_name'] = f'e{expt_no}_' + params['schema_name']
         schema_path = build_schema(**params)
 
         schema_paths.append(schema_path)
@@ -357,6 +371,7 @@ def evaluate_multi_system_scenarios(
         sampled_scenarios,
         system_design,
         data_dir,
+        solar_file_pattern,
         building_file_pattern,
         design,
         cost_dict,
@@ -364,6 +379,8 @@ def evaluate_multi_system_scenarios(
         solver_kwargs={},
         use_battery=True,
         n_processes=None,
+        expt_no=None,
+        process_id=None,
         show_progress=False,
         plot=False
     ):
@@ -380,6 +397,8 @@ def evaluate_multi_system_scenarios(
                 - 'solar_capacities': List of solar power capacity in each
                     building (kWp)
                 - 'grid_con_capacity': Grid connection capacity (kW)
+        solar_file_pattern (fstr): Pattern of solar generation data files. Must
+            contain {year} placeholder.
         building_file_pattern (fstr): Pattern of building load data files. Must
             contain {id} and {year} placeholders.
         design (bool, optional): Whether to evaluate total system cost,
@@ -396,6 +415,10 @@ def evaluate_multi_system_scenarios(
         n_processes (int, optional): Number of processes to use for running
             simulations in parallel using `multiprocess.Pool`. If None, sims
             are run sequentially. Defaults to None.
+        expt_no (int, optional): Experiment number for tagging schemas when generating
+            temporary files. Defaults to None.
+        process_id (int, optional): Unique process ID for tagging schemas when
+            fn called via multiprocessing. Defaults to None.
         show_progress (bool, optional): Whether to display simulation progress
             in console. Defaults to False.
         plot (bool, optional): Whether to plot system profiles for each scenario.
@@ -425,7 +448,15 @@ def evaluate_multi_system_scenarios(
     for m, scenario in enumerate(sampled_scenarios):
 
         # Get building files, generating temporary files if required (i.e. if scaling needed)
-        load_files = generate_temp_building_files(scenario, data_dir, building_file_pattern, m)
+        load_files = generate_temp_building_files(
+            scenario,
+            data_dir,
+            solar_file_pattern,
+            building_file_pattern,
+            scenario_no=m,
+            expt_no=expt_no,
+            process_id=process_id
+            )
         all_load_files.extend(load_files)
 
         # Build schema
@@ -433,8 +464,11 @@ def evaluate_multi_system_scenarios(
         params['building_names'] = [f'TB{i}' for i in range(len(scenario))]
         params['load_data_paths'] = load_files
         params['schema_name'] = f'EVAL_schema_s{m}'
+        if process_id is not None: params['schema_name'] = f'p{process_id}_' + params['schema_name']
+        if expt_no is not None: params['schema_name'] = f'e{expt_no}_' + params['schema_name']
         schema_path = build_schema(**params)
         scenario_schema_paths.append(schema_path)
+
 
     # Evaluate system performance for each scenario
     if show_progress: print("Evaluating scenarios...")

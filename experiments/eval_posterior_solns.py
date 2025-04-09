@@ -24,11 +24,14 @@ if __name__ == '__main__':
 
     # Get run options
     [expt_id,n_buildings,info_id] = [int(sys.argv[i]) for i in range(1,4)]
+    expt_no = "".join(str(i) for i in [expt_id,n_buildings,info_id])
     expt_name, sizing_constraints, info_type = parse_experiment_args(expt_id, n_buildings, info_id)
+
+    if len(sys.argv) > 3: scen_no = int(sys.argv[3])
+    else: scen_no = None
 
 
     np.random.seed(0)
-    n_processes = mp.cpu_count()
 
     post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     if not os.path.exists(os.path.join(post_results_dir,'evals')):
@@ -63,11 +66,16 @@ if __name__ == '__main__':
             info_type=info_type,
             n_post_samples=n_post_samples,
             data_dir=dataset_dir,
+            solar_file_pattern=solar_fname_pattern,
             building_file_pattern=building_fname_pattern,
             cost_dict=cost_dict,
             solver_kwargs={},
-            n_processes=n_processes
+            n_processes=n_processes,
+            expt_no=expt_no
         )
 
         # Evaluate posterior optimal system designs.
-        eval_results = [eval_wrapper(t) for t in tqdm(scenario_tuples)]
+        if scen_no is None:
+            eval_results = [eval_wrapper(t) for t in tqdm(scenario_tuples)]
+        else:
+            eval_result = eval_wrapper(scenario_tuples[scen_no])

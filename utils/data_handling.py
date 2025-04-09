@@ -6,8 +6,8 @@ import numpy as np
 
 
 def format_scenario_tuple(building_tuple):
-    """Format first two arugments of building scenario tuples to be integers."""
-    return tuple([int(t) if i < 2 else t for i,t in enumerate(building_tuple)])
+    """Format first three arugments of building scenario tuples to be integers."""
+    return tuple([int(t) if i < 3 else t for i,t in enumerate(building_tuple)])
 
 def save_scenarios(scenarios, measurements, out_path):
     """Save sampled scenarios to CSV."""
