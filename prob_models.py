@@ -14,10 +14,12 @@ logger.setLevel(logging.WARNING)
 
 
 def prior_model(n_buildings,n_samples,prob_config):
-    """Sample scenarios of (building-year) & (mean-peak) pairs from prior distribution.
-    Scenarios are Nx4 arrays of building-year-mean-peak tuples for each of the N buildings in the system.
+    """Sample scenarios from prior distribution.
+    Scenarios are Nx5 arrays of (solar_year,building_id,load_year,mean,peak) tuples for
+        each of the N buildings in the system.
     Prior model assumes all buildings and years are equally likely and independent.
-    Mean and peak values (in kWh/hr) are modelled as Gaussian and uniform distributions respectively.
+    Mean and peak values (in kWh/hr) are modelled as Gaussian and uniform distributions
+        respectively.
 
     Args:
         n_buildings (int): Number of buildings in system.
@@ -25,29 +27,46 @@ def prior_model(n_buildings,n_samples,prob_config):
         prob_config (dict): Parameters defining probability model configuration.
 
     Returns:
-        np.array: Array of scenarios (Nx4 arrays of building-year-mean-peak tuples).
-        np.array: Array of measurements (building id, and mean & peak load values, no year information).
+        np.array: Array of scenarios (Nx5 arrays of solar_year,building_id,load_year,mean,peak tuples).
+        np.array: Array of measurements (building id, and mean & peak load values,
+            no solar_year or load_year information).
     """
 
+    solar_ys = np.random.choice(prob_config['solar_years'], n_samples) # common to all buildings
+
     bs = np.random.choice(prob_config['ids'], (n_samples,n_buildings))
-    ys = np.random.choice(prob_config['years'], (n_samples,n_buildings))
+    load_ys = np.random.choice(prob_config['load_years'], n_samples) # load year variable common to all buildings
     mus = np.round(np.random.normal(prob_config['mean_load_mean'], prob_config['mean_load_std'], (n_samples,n_buildings)),1)
     ps = np.round(np.random.uniform(prob_config['peak_load_min'], prob_config['peak_load_max'], (n_samples,n_buildings)),1)
-    thetas = np.array([list(zip(bs[i],ys[i],mus[i],ps[i])) for i in range(n_samples)])
+    thetas = np.array([list(zip(
+        [solar_ys[i]]*n_buildings,
+        bs[i],
+        [load_ys[i]]*n_buildings,
+        mus[i],
+        ps[i]
+        )) for i in range(n_samples)])
 
     # sample measured values
     msrd_mus = np.round(np.random.normal(mus,mus*prob_config['mean_load_msr_error']),1)
     msrd_ps = np.round(np.random.normal(ps,ps*prob_config['peak_load_msr_error']),1)
-    zs = np.array([list(zip(bs[i],[-1]*n_buildings,msrd_mus[i],msrd_ps[i])) for i in range(n_samples)])
+    zs = np.array([list(zip(
+        [-1]*n_buildings,
+        bs[i],
+        [-1]*n_buildings,
+        msrd_mus[i],
+        msrd_ps[i]
+        )) for i in range(n_samples)])
 
     return thetas, zs
 
+
 def posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_config,info='type+mean+peak'):
-    """Sample scenarios of (building-year) & (mean-peak) pairs from posterior distribution.
-    i.e. with given (sampled) set of building ids, and mean & peak loads.
-    Scenarios are Nx4 arrays of building-year-mean-peak tuples for each of the N buildings in the system.
+    """Sample scenarios from posterior distribution, i.e. with given (sampled) set of
+        building ids, and mean & peak loads.
+    Scenarios are Nx5 arrays of (solar_year,building_id,load_year,mean,peak) tuples for each of
+        the N buildings in the system.
     Posterior assumes perfect information provided by sample for building ids, and imperfect info
-    mean and/or peak load.
+        mean and/or peak load.
     The type, mean and peak load samples used are the **measured** values, not the true values.
 
     Args:
@@ -63,10 +82,13 @@ def posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_config,
             Defaults to 'type+mean+peak'.
 
     Returns:
-        np.array: Array of scenarios, theta|z (Nx4 arrays of building-year-mean-peak tuples).
+        np.array: Array of scenarios, theta|z (Nx5 arrays of solar_year,building_id,load_year,mean,peak tuples).
     """
 
     n_buildings = len(sampled_ids)
+
+    # Solar year
+    solar_ys = np.random.choice(prob_config['solar_years'], n_samples)
 
     # Building type (id)
     if info in ['type','type+mean+peak']:
@@ -75,7 +97,7 @@ def posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_config,
         bs = np.random.choice(prob_config['ids'], (n_samples,n_buildings))
 
     # Data year
-    ys = np.random.choice(prob_config['years'], (n_samples,n_buildings))
+    load_ys = np.random.choice(prob_config['load_years'], n_samples)
 
     # Mean load
     if info in ['mean','type+mean+peak']:
@@ -111,7 +133,13 @@ def posterior_model(sampled_ids,sampled_mus,sampled_peaks,n_samples,prob_config,
     else:
         ps = np.round(np.random.uniform(prob_config['peak_load_min'], prob_config['peak_load_max'], (n_samples,n_buildings)),1)
 
-    return np.array([list(zip(bs[i],ys[i],mus[i],ps[i])) for i in range(n_samples)])
+    return np.array([list(zip(
+        [solar_ys[i]]*n_buildings,
+        bs[i],
+        [load_ys[i]]*n_buildings,
+        mus[i],
+        ps[i]
+        )) for i in range(n_samples)])
 
 
 
@@ -123,11 +151,12 @@ if __name__ == '__main__':
     n_buildings = 5
     n_samples = 3
     years = list(range(2012, 2018))
-    ids = [0, 4, 8, 19, 25, 40, 58, 102, 104, 118]
+    ids = [0, 4, 8, 19, 25, 40, 58, 102, 104] # 118
 
     prob_config = {
     'ids': ids,
-    'years': years,
+    'solar_years': years,
+    'load_years': years,
     'mean_load_mean': 100.0,
     'mean_load_std': 25.0,
     'mean_load_msr_error': 0.1,
@@ -137,11 +166,18 @@ if __name__ == '__main__':
     'thin_factor': 10
     }
 
-    level_prior_scenarios, level_prior_measurements = prior_model(n_buildings, n_samples, prob_config)
-    print("Level prior scenarios:")
-    print(level_prior_scenarios)
-    print(level_prior_measurements)
+    prior_scenarios, prior_measurements = prior_model(n_buildings, n_samples, prob_config)
+    print("Prior scenarios:")
+    print(prior_scenarios)
+    print(prior_measurements)
 
-    level_posterior_scenarios = posterior_model(level_prior_measurements[0][:,0], level_prior_measurements[0][:,2], level_prior_measurements[0][:,3], n_samples, prob_config)
-    print("Level posterior scenarios:")
-    print(level_posterior_scenarios)
+    posterior_scenarios = posterior_model(
+        prior_measurements[0][:,1], # magic values are horrendous :(
+        prior_measurements[0][:,3],
+        prior_measurements[0][:,4],
+        n_samples,
+        prob_config,
+        info='mean'
+        )
+    print("Posterior scenarios:")
+    print(posterior_scenarios)
