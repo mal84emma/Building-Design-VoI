@@ -56,8 +56,9 @@ if __name__ == '__main__':
 
     ## Simplify and save solar data
     for syear in solar_years:
-        solar_data = pd.read_csv(os.path.join(data_dir, sname_pattern%syear), header=0)['solar generation [W/kW]']
-        solar_data.rename({'solar generation [W/kW]':'Solar Generation [W/kW]'}, inplace=True)
+        solar_data = pd.read_csv(os.path.join(data_dir, sname_pattern%syear), header=0)
+        solar_data.rename(columns={'solar generation [W/kW]':'Solar Generation [W/kW]'}, inplace=True)
+        solar_data = solar_data['Solar Generation [W/kW]']
         solar_data = np.around(solar_data[:hours_per_year], 1)
         solar_data.to_csv(os.path.join(out_dir, soutname_pattern.format(year=syear)), index=False)
 
