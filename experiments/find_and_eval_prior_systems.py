@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
 
     if not os.path.exists(os.path.join(results_dir,'prior')):
-        os.makedirs(os.path.join(results_dir,'prior'))
+        os.makedirs(os.path.join(results_dir,'prior'), exist_ok=True)
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         try:
             m = gp.Model()
             e = get_Gurobi_WLS_env()
-            solver_kwargs = {'solver': 'GUROBI','Threads':5,'env': e}
+            solver_kwargs = {'solver':'GUROBI','Method':2,'Threads':4,'env':e}
         except:
             solver_kwargs = {}
 

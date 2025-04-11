@@ -4,7 +4,7 @@ import os
 
 # Machine settings
 n_concurrent_designs = None
-n_processes = None
+n_processes = 10
 
 # Directories and file patterns
 dataset_dir = os.path.join('data','processed')

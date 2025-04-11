@@ -27,7 +27,7 @@ if __name__ == '__main__':
     expt_no = "".join(str(i) for i in [expt_id,n_buildings,info_id])
     expt_name, sizing_constraints, info_type = parse_experiment_args(expt_id, n_buildings, info_id)
 
-    if len(sys.argv) > 3: scen_no = int(sys.argv[3])
+    if len(sys.argv) > 4: scen_no = int(sys.argv[4])
     else: scen_no = None
 
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     post_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     if not os.path.exists(os.path.join(post_results_dir,'evals')):
-        os.makedirs(os.path.join(post_results_dir,'evals'))
+        os.makedirs(os.path.join(post_results_dir,'evals'), exist_ok=True)
 
     with warnings.catch_warnings():
         # filter pandas warnings, `DeprecationWarning: np.find_common_type is deprecated.`
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         # Set up output directory.
         out_dir = os.path.join(post_results_dir,'evals')
         if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+            os.makedirs(out_dir, exist_ok=True)
 
         # Set up wrapper function for posterior design.
         eval_wrapper = partial(
