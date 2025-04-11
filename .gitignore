@@ -20,10 +20,16 @@ venv/
 temp.html
 
 # Results files
-results
+results*/
 
 ## Ignore complied files from Stan
 # Ignore all files in stan_models dir
 stan_models/*
 # Unignore stan files in stan_models dir
 !stan_models/*.stan
+
+## Ignore HPC runtime files
+logs
+slurm*
+machine.file*
+allocated.nodes
