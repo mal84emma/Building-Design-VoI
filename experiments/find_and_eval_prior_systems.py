@@ -3,9 +3,7 @@
 import os
 import sys
 import warnings
-import numpy as np
 import gurobipy as gp
-import multiprocessing as mp
 from utils import get_Gurobi_WLS_env, data_handling
 from energy_system import design_system, evaluate_multi_system_scenarios
 
@@ -75,6 +73,7 @@ if __name__ == '__main__':
             if (expt_no is None) or (expt_no == n):
 
                 case_name = d['case_name']
+                expt_code = "".join(str(i) for i in [n_buildings,n])
 
                 # Design system.
                 # ==============
@@ -85,7 +84,7 @@ if __name__ == '__main__':
                     building_fname_pattern,
                     cost_dict,
                     sizing_constraints=d['sizing_constraints'],
-                    expt_no=n,
+                    expt_no=expt_code,
                     solver_kwargs=solver_kwargs,
                     num_reduced_scenarios=num_reduced_scenarios,
                     show_progress=True
@@ -110,7 +109,7 @@ if __name__ == '__main__':
                     cost_dict=cost_dict,
                     use_battery=d['use_battery'],
                     n_processes=n_processes,
-                    expt_no=n,
+                    expt_no=expt_code,
                     show_progress=True
                 )
                 print(case_name, mean_cost)
