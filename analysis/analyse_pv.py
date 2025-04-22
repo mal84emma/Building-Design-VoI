@@ -8,15 +8,14 @@ import pandas as pd
 if __name__ == '__main__':
 
     data_dir = os.path.join('data','processed')
-    bname_pattern = 'ly_{id}-{year}.csv'
-    years = list(range(2012, 2018))
-    building_id = 0
+    sname_pattern = 'sy_{year}.csv'
+    years = list(range(2010, 2020))
 
     capacity_factors = []
 
     for year in years:
         # read PV generation data
-        pv_df = pd.read_csv(os.path.join(data_dir, bname_pattern.format(id=building_id, year=year)))
+        pv_df = pd.read_csv(os.path.join(data_dir, sname_pattern.format(year=year)))
         capacity_factors.append(pv_df['Solar Generation [W/kW]'].mean()/1e3)
 
     for year, cf in zip(years, capacity_factors):

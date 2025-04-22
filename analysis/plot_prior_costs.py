@@ -32,7 +32,7 @@ if __name__ == '__main__':
     prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
     prior_eval_results = prior_eval_results[:n_post_samples]
     prior_costs = [res['objective'] for res in prior_eval_results]
-    prior_lcoes = prior_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
+    prior_lcoes = prior_costs/np.array([np.sum(scen[:,3])*365*24*cost_dict['opex_factor'] for scen in scenarios])
 
     # Analyse prior costs.
     # ====================
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # Plot correlations between scenario cost and mean & peak load.
     # =============================================================
     fig, ax = plt.subplots()
-    total_mean_loads = [np.sum(scen[:,2]) for scen in scenarios]
+    total_mean_loads = [np.sum(scen[:,3]) for scen in scenarios]
     plt.scatter(
         x=total_mean_loads,
         y=np.array(prior_costs)/1e6,

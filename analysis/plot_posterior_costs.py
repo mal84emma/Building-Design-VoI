@@ -31,7 +31,7 @@ if __name__ == '__main__':
     prior_eval_results = data_handling.load_eval_results(os.path.join(results_dir,'prior',f'{expt_name}_{n_buildings}b_eval_results.csv'))
     prior_eval_results = prior_eval_results[:n_post_samples]
     prior_costs = [res['objective'] for res in prior_eval_results]
-    prior_lcoes = prior_costs/np.array([np.sum(scen[:,2])*365*24*cost_dict['opex_factor'] for scen in scenarios])
+    prior_lcoes = prior_costs/np.array([np.sum(scen[:,3])*365*24*cost_dict['opex_factor'] for scen in scenarios])
 
     posterior_results_dir = os.path.join(results_dir,f'posterior_{expt_name}_{n_buildings}b_{info_type}_info')
     posterior_eval_results_files = [file for file in os.listdir(os.path.join(posterior_results_dir,'evals')) if file.endswith(".csv")]

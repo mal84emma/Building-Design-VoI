@@ -16,7 +16,6 @@ if __name__ == '__main__':
 
     n_buildings = 6
 
-    dataset_dir = os.path.join('data','processed')
     building_fname_pattern = 'ly_{id}-{year}.csv'
 
     # Load prior scenario samples.
@@ -36,22 +35,22 @@ if __name__ == '__main__':
 
     mean_load = 100
 
-    per_building_peaks = {b_id: [np.max(load_profiles[f'{b_id}-{year}']) for year in years] for b_id in ids}
+    per_building_peaks = {b_id: [np.max(load_profiles[f'{b_id}-{year}']) for year in load_years] for b_id in ids}
     all_building_peaks = np.array([np.max(v) for k,v in load_profiles.items()])
 
     # Compute stats of aggregate load profiles for scenarios.
     stats = np.array([get_scenario_stats(s, load_profiles) for s in scenarios])
 
-    print(f'Max peak load: {np.max(stats[:,2])}')
-    print(f'Min peak load: {np.min(stats[:,2])}')
-    print(f'Mean peak load: {np.mean(stats[:,2])}')
-    print(f'Peak load std: {np.std(stats[:,2])}')
+    print(f'Max peak load: {np.max(stats[:,3])}')
+    print(f'Min peak load: {np.min(stats[:,3])}')
+    print(f'Mean peak load: {np.mean(stats[:,3])}')
+    print(f'Peak load std: {np.std(stats[:,3])}')
 
     # Plot distribution of peak load factors.
     ## Use this to demonstrate peak smoothing effect in district systems.
     fig, ax = plt.subplots()
     sns.kdeplot(all_building_peaks/mean_load, ax=ax, c='b', cut=0, levels=200, label='Individual')
-    sns.kdeplot(stats[:,2]/(n_buildings*mean_load), ax=ax, c='k', cut=0, levels=200, label='Aggregate')
+    sns.kdeplot(stats[:,3]/(n_buildings*mean_load), ax=ax, c='k', cut=0, levels=200, label='Aggregate')
     plt.xlabel("Annual peak load factor")
     plt.ylabel("Density")
     ax.set_yticks([])

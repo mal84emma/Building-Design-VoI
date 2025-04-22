@@ -124,8 +124,8 @@ if __name__ == '__main__':
     # ================================================
     fig, ax = plt.subplots()
 
-    prior_av_load = np.sum(np.mean(prior_design_results['reduced_scenarios'][:,:,2],axis=0))
-    post_av_loads = [np.sum(np.mean(res['reduced_scenarios'][:,:,2],axis=0)) for res in post_design_results]
+    prior_av_load = np.sum(np.mean(prior_design_results['reduced_scenarios'][:,:,3],axis=0))
+    post_av_loads = [np.sum(np.mean(res['reduced_scenarios'][:,:,3],axis=0)) for res in post_design_results]
 
     for i,(label,var) in enumerate(zip(['Battery capacity (kWh)','Solar capacity (kWp)','Grid con. capacity (kW)']
                                        ,['battery_capacities','solar_capacities','grid_con_capacity'])):

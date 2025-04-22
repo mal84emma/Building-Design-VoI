@@ -13,8 +13,6 @@ if __name__ == '__main__':
 
     from experiments.configs.config import *
 
-    results_dir = os.path.join('experiments','results')
-
     # Compare SP objective and simulated cost for prior cases.
     # ========================================================
     for n_buildings,case in zip([5,5,1],['unconstr','constr_solar','unconstr']):
