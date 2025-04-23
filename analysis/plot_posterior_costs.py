@@ -39,7 +39,7 @@ if __name__ == '__main__':
     posterior_eval_results_files = [efile for scen_num,efile in sorted(zip(scenario_numbers, posterior_eval_results_files))]
     post_eval_results = [data_handling.load_eval_results(os.path.join(posterior_results_dir, 'evals', file)) for file in posterior_eval_results_files]
     posterior_costs = [res['objective'] for scenario_results in post_eval_results for res in scenario_results]
-    posterior_lcoes = [res['objective']/np.sum([bs[2]*365*24*cost_dict['opex_factor'] for bs in res['scenario']]) for scenario_results in post_eval_results for res in scenario_results]
+    posterior_lcoes = [res['objective']/np.sum([bs[3]*365*24*cost_dict['opex_factor'] for bs in res['scenario']]) for scenario_results in post_eval_results for res in scenario_results]
 
     # Plot distributions of total scenario costs.
     # ===========================================
