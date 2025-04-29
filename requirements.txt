@@ -1,5 +1,6 @@
 CityLearn==1.7.0
 gurobipy==11.0.1
+ipykernel==6.29.5
 matplotlib==3.8.4
 multiprocess==0.70.16
 numba==0.58.0
