@@ -108,6 +108,7 @@ if __name__ == '__main__':
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_costs)/1e6, 0, ymax, colors='k', linestyles='dashed', lw=2)
     plt.text(np.mean(prior_costs)/1e6*0.995, ymax*0.4, f'Mean cost: £{np.mean(prior_costs)/1e6:.3f}m', rotation=90, verticalalignment='center', horizontalalignment='right')
+    plt.text(np.mean(prior_costs)/1e6+0.4, ymax*0.1, f'Std dev: £{np.std(prior_costs)/1e6:.3f}m ({np.std(prior_costs)/np.mean(prior_costs)*100:.1f}%)', verticalalignment='center', horizontalalignment='left')
     plt.xlabel('Total scenario cost (£m)')
     plt.ylim(0, ymax)
     ax.get_yaxis().set_ticks([])
@@ -120,6 +121,7 @@ if __name__ == '__main__':
     ymax = ax.get_ylim()[1]
     plt.vlines(np.mean(prior_lcoes), 0, ymax, colors='k', linestyles='dashed', lw=2)
     plt.text(np.mean(prior_lcoes)*0.9975, ymax*0.4, f'Mean LCOE: £{np.mean(prior_lcoes):.3f}/kWh', rotation=90, verticalalignment='center', horizontalalignment='right')
+    plt.text(np.mean(prior_lcoes)+0.0175, ymax*0.2, f'Std dev: £{np.std(prior_lcoes):.3f}/kWh ({np.std(prior_lcoes)/np.mean(prior_lcoes)*100:.1f}%)', verticalalignment='center', horizontalalignment='left')
     plt.xlabel('Scenario LCOE (£/kWh)')
     plt.ylim(0, ymax)
     ax.get_yaxis().set_ticks([])
